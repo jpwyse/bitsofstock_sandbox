@@ -15,6 +15,8 @@ class CryptocurrencySchema(Schema):
     icon_url: str
     current_price: Optional[Decimal] = None
     price_change_24h: Optional[Decimal] = None
+    volume_24h: Optional[Decimal] = None
+    market_cap: Optional[Decimal] = None
     last_updated: Optional[datetime] = None
 
 
@@ -45,6 +47,7 @@ class PortfolioHistorySchema(Schema):
 
 # Holdings Schemas
 class HoldingCryptoSchema(Schema):
+    id: str
     symbol: str
     name: str
     icon_url: str

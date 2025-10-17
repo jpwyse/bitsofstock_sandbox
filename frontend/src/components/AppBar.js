@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -15,10 +16,19 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import logo from '../assets/BoSLogo.png';
 
-const pages = ['Home', 'Portfolio', 'Market', 'Transfer'];
+const pages = ['Dashboard', 'Portfolio', 'Market', 'Transfer'];
 const settings = ['Personal Information', 'Account Information', 'Security', 'Logout'];
 
+// Define the page routes mapping
+const pageRoutes = {
+  'Dashboard': '/',
+  'Portfolio': '/portfolio',
+  'Market': '/market',
+  'Transfer': '/transfer'
+};
+
 function ResponsiveAppBar() {
+  const navigate = useNavigate();
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
 
@@ -39,9 +49,15 @@ function ResponsiveAppBar() {
   };
 
   const handlePageClick = (page) => {
-    console.log(`Navigate to: ${page}`);
+    const route = pageRoutes[page];
+    console.log(`Navigate to: ${page} (${route})`);
+
+    // Navigate for Dashboard, Portfolio, and Market pages, others just log the URL path
+    if (page === 'Dashboard' || page === 'Portfolio' || page === 'Market') {
+      navigate(route);
+    }
+
     handleCloseNavMenu();
-    // TODO: Add navigation logic here
   };
 
   const handleSettingClick = (setting) => {
@@ -52,8 +68,8 @@ function ResponsiveAppBar() {
 
   return (
     <AppBar position="sticky" sx={{ borderRadius: 0, m: 0, p: 0 }}>
-      <Container maxWidth="xl" sx={{ borderRadius: 0 }}>
-        <Toolbar disableGutters>
+      <Container maxWidth="false" sx={{ borderRadius: 0 }}>
+        <Toolbar>
           {/* Desktop Logo */}
           <Box
             sx={{
@@ -61,7 +77,9 @@ function ResponsiveAppBar() {
               flexDirection: 'column',
               alignItems: 'center',
               mr: 2,
+              cursor: 'pointer',
             }}
+            onClick={() => navigate('/')}
           >
             <Box
               component="img"
@@ -73,8 +91,6 @@ function ResponsiveAppBar() {
             />
             <Typography
               variant="caption"
-              component="a"
-              href="/"
               sx={{
                 fontFamily: 'monospace',
                 fontWeight: 600,
@@ -134,7 +150,9 @@ function ResponsiveAppBar() {
               flexDirection: 'column',
               alignItems: 'center',
               flexGrow: 1,
+              cursor: 'pointer',
             }}
+            onClick={() => navigate('/')}
           >
             <Box
               component="img"
@@ -146,8 +164,6 @@ function ResponsiveAppBar() {
             />
             <Typography
               variant="caption"
-              component="a"
-              href="/"
               sx={{
                 fontFamily: 'monospace',
                 fontWeight: 600,

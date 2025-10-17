@@ -16,7 +16,7 @@ import {
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { usePortfolio } from '../context/PortfolioContext';
-import { formatCurrency, formatPercentage } from '../utils/formatters';
+import { formatCurrency, formatPercentage, formatLargeNumber } from '../utils/formatters';
 import TradeModal from './TradeModal';
 
 const CryptocurrencyList = () => {
@@ -53,6 +53,8 @@ const CryptocurrencyList = () => {
               <TableCell>Asset</TableCell>
               <TableCell align="right">Price</TableCell>
               <TableCell align="right">24h Change</TableCell>
+              <TableCell align="right">24h Volume</TableCell>
+              <TableCell align="right">Market Cap</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -96,6 +98,16 @@ const CryptocurrencyList = () => {
                       {formatPercentage(crypto.price_change_24h)}
                     </Typography>
                   </Box>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body2" color="text.secondary">
+                    {formatLargeNumber(crypto.volume_24h)}
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body2" fontWeight={500}>
+                    {formatLargeNumber(crypto.market_cap)}
+                  </Typography>
                 </TableCell>
                 <TableCell align="right">
                   <Button

@@ -6,12 +6,30 @@
 
 **Purpose:** Permanent record of all commits with timestamps and file changes
 
-**Claude's Responsibility:**
-After every commit request, Claude MUST:
-1. Show the current COMMIT_LOG.md contents
-2. Add the new commit entry
-3. Show the updated COMMIT_LOG.md contents
-4. Instruct you to update the file
+**Rules for Updating the Commit Log:**
+
+When the user says: `update commit log - [commit message]`, Claude MUST:
+
+1. **Run Git Commands:**
+   - Execute `git status` to see what files have changed
+   - Execute `git diff --staged` to analyze the specific changes
+
+2. **Update COMMIT_LOG.md:**
+   - Add new commit entry in the format shown in the template
+   - Update statistics section (total commits, files, lines, dates)
+   - Include specific line numbers and describe what each section does
+   - Use medium detail level - not too verbose, not too brief
+
+3. **Important Details:**
+   - **Repository:** GitHub username is `jpwyse`
+   - **Timezone:** Use EST (Eastern Standard Time)
+   - **Commit Message:** Use the message provided in the trigger phrase
+   - **Branch:** Typically `main` unless specified otherwise
+   - **Format:** Follow the exact format shown in COMMIT_LOG.md template
+
+4. **Process:**
+   - Save the updated COMMIT_LOG.md file
+   - User will then stage it in VSCode before pushing
 
 ---
 

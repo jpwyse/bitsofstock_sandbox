@@ -115,9 +115,5 @@ celerybeat.pid
 *.sql
 *.dump
 
-# .gitignore
-
-# DO NOT add this line:
-# docs/COMMIT_LOG.md  ❌
-
-# The commit log SHOULD be tracked in git ✅
+# Documentation - entire docs folder
+docs/

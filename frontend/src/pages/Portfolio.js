@@ -12,8 +12,11 @@ import {
 } from '@mui/material';
 import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency, formatPercentage } from '../utils/formatters';
+import HoldingsList from '../components/HoldingsList';
+import PortfolioAllocationChart from '../components/PortfolioAllocationChart';
+import TransactionsList from '../components/TransactionsList';
 
-const Dashboard = () => {
+const Portfolio = () => {
   const { portfolio, loading } = usePortfolio();
   const [currentTab, setCurrentTab] = useState(0);
 
@@ -34,7 +37,7 @@ const Dashboard = () => {
       {/* Portfolio Summary */}
       <Box mb={4}>
         <Typography variant="h3" gutterBottom fontWeight={700}>
-          Portfolio Snapshot
+          Portfolio Overview
         </Typography>
 
         <Grid container spacing={3} mt={1}>
@@ -103,15 +106,15 @@ const Dashboard = () => {
           <Tab label="Volatility" />
         </Tabs>
 
-        {currentTab === 0 && <Box>Holdings content coming soon</Box>}
-        {currentTab === 1 && <Box>Allocation content coming soon</Box>}
+        {currentTab === 0 && <HoldingsList />}
+        {currentTab === 1 && <PortfolioAllocationChart />}
         {currentTab === 2 && <Box>Performance content coming soon</Box>}
         {currentTab === 3 && <Box>Gains/Losses content coming soon</Box>}
-        {currentTab === 4 && <Box>Transactions content coming soon</Box>}
+        {currentTab === 4 && <TransactionsList />}
         {currentTab === 5 && <Box>Volatility content coming soon</Box>}
       </Box>
     </Container>
   );
 };
 
-export default Dashboard;
+export default Portfolio;

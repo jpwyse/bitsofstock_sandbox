@@ -84,3 +84,21 @@ export const formatRelativeTime = (dateString) => {
 
   return formatDate(dateString);
 };
+
+export const formatLargeNumber = (value) => {
+  if (value === null || value === undefined) return '$0';
+
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+  if (numValue >= 1e12) {
+    return `$${(numValue / 1e12).toFixed(2)}T`;
+  } else if (numValue >= 1e9) {
+    return `$${(numValue / 1e9).toFixed(2)}B`;
+  } else if (numValue >= 1e6) {
+    return `$${(numValue / 1e6).toFixed(2)}M`;
+  } else if (numValue >= 1e3) {
+    return `$${(numValue / 1e3).toFixed(2)}K`;
+  }
+
+  return formatCurrency(numValue, 0);
+};

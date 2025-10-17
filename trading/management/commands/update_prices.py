@@ -57,6 +57,8 @@ class Command(BaseCommand):
                                 crypto = Cryptocurrency.objects.get(symbol=symbol)
                                 crypto.current_price = price_data['price']
                                 crypto.price_change_24h = price_data['change_24h']
+                                crypto.volume_24h = price_data.get('volume_24h')
+                                crypto.market_cap = price_data.get('market_cap')
                                 crypto.last_updated = timestamp
                                 crypto.save()
 
@@ -70,7 +72,9 @@ class Command(BaseCommand):
                                 updated_cryptos.append({
                                     'symbol': symbol,
                                     'price': str(price_data['price']),
-                                    'change_24h': str(price_data['change_24h'])
+                                    'change_24h': str(price_data['change_24h']),
+                                    'volume_24h': str(price_data.get('volume_24h', 0)),
+                                    'market_cap': str(price_data.get('market_cap', 0))
                                 })
 
                             except Cryptocurrency.DoesNotExist:

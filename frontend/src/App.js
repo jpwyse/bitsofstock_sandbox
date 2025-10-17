@@ -5,6 +5,8 @@ import theme from './theme/theme';
 import { PortfolioProvider } from './context/PortfolioContext';
 import ResponsiveAppBar from './components/AppBar';
 import Dashboard from './pages/Dashboard';
+import Portfolio from './pages/Portfolio';
+import Market from './pages/Market';
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
           <ResponsiveAppBar />
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/market" element={<Market />} />
           </Routes>
         </Router>
       </PortfolioProvider>

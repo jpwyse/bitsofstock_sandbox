@@ -43,7 +43,9 @@ class CoinGeckoService:
             params = {
                 'ids': ids,
                 'vs_currencies': 'usd',
-                'include_24hr_change': 'true'
+                'include_24hr_change': 'true',
+                'include_24hr_vol': 'true',
+                'include_market_cap': 'true',
             }
             
             response = self.session.get(url, params=params, timeout=10)
@@ -54,11 +56,14 @@ class CoinGeckoService:
             result = {}
             for symbol, coingecko_id in self.SUPPORTED_CRYPTOS.items():
                 if coingecko_id in data:
+                    coin_data = data[coingecko_id]
                     result[symbol] = {
-                        'price': Decimal(str(data[coingecko_id]['usd'])),
-                        'change_24h': Decimal(str(data[coingecko_id].get('usd_24h_change', 0)))
+                        'price': Decimal(str(coin_data['usd'])),
+                        'change_24h': Decimal(str(coin_data.get('usd_24h_change', 0))),
+                        'volume_24h': Decimal(str(coin_data.get('usd_24h_vol', 0))),
+                        'market_cap': Decimal(str(coin_data.get('usd_market_cap', 0)))
                     }
-            
+
             return result
             
         except Exception as e:
@@ -116,17 +121,17 @@ class CoinGeckoService:
                 'community_data': 'false',
                 'developer_data': 'false'
             }
-            
+
             response = self.session.get(url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
-            
+
             return {
                 'name': data.get('name'),
                 'symbol': data.get('symbol', '').upper(),
                 'icon_url': data.get('image', {}).get('large', '')
             }
-            
+
         except Exception as e:
             logger.error(f"Error fetching coin info for {coingecko_id}: {e}")
             return None

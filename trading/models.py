@@ -81,9 +81,21 @@ class Cryptocurrency(models.Model):
         blank=True
     )
     price_change_24h = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        null=True, 
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    volume_24h = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    market_cap = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
         blank=True
     )
     last_updated = models.DateTimeField(null=True, blank=True)
@@ -200,7 +212,7 @@ class Transaction(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.transaction_type} {self.quantity} {self.cryptocurrency.symbol} @ ${self.price_per_unit}"
+        return f"{self.transaction_type} {self.quantity} {self.cryptocurrency.symbol} @ ${self.price_per_unit} | {self.timestamp}"
 
 
 class PriceHistory(models.Model):

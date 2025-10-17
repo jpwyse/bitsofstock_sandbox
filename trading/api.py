@@ -65,9 +65,9 @@ def get_portfolio_history(
     valid_timeframes = ['1D', '5D', '1M', '6M', 'YTD', '1Y', '5Y', 'MAX']
     if timeframe not in valid_timeframes:
         raise HttpError(400, f"Invalid timeframe. Must be one of: {', '.join(valid_timeframes)}")
-    
+
     data_points = PortfolioService.calculate_portfolio_history(portfolio, timeframe)
-    
+
     return {
         "timeframe": timeframe,
         "data_points": data_points
@@ -91,6 +91,7 @@ def get_holdings(request):
         holdings_data.append({
             "id": str(holding.id),
             "cryptocurrency": {
+                "id": str(holding.cryptocurrency.id),
                 "symbol": holding.cryptocurrency.symbol,
                 "name": holding.cryptocurrency.name,
                 "icon_url": holding.cryptocurrency.icon_url,
@@ -123,6 +124,8 @@ def get_cryptocurrencies(request):
             "icon_url": crypto.icon_url,
             "current_price": crypto.current_price,
             "price_change_24h": crypto.price_change_24h,
+            "volume_24h": crypto.volume_24h,
+            "market_cap": crypto.market_cap,
             "last_updated": crypto.last_updated
         }
         for crypto in cryptos
@@ -146,6 +149,8 @@ def get_cryptocurrency_detail(request, crypto_id: str):
         "icon_url": crypto.icon_url,
         "current_price": crypto.current_price,
         "price_change_24h": crypto.price_change_24h,
+        "volume_24h": crypto.volume_24h,
+        "market_cap": crypto.market_cap,
         "last_updated": crypto.last_updated,
         "price_history_7d": price_history
     }
