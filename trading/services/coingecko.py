@@ -1,6 +1,7 @@
 import requests
 from decimal import Decimal
 from datetime import datetime, timedelta
+from django.utils import timezone as django_timezone
 from django.conf import settings
 from typing import Dict, List, Optional
 import logging
@@ -99,11 +100,15 @@ class CoinGeckoService:
             
             prices = []
             for timestamp_ms, price in data.get('prices', []):
+                # Convert to timezone-aware datetime (UTC)
+                naive_dt = datetime.fromtimestamp(timestamp_ms / 1000)
+                aware_dt = django_timezone.make_aware(naive_dt, django_timezone.utc)
+
                 prices.append({
-                    'timestamp': datetime.fromtimestamp(timestamp_ms / 1000),
+                    'timestamp': aware_dt,
                     'price': Decimal(str(price))
                 })
-            
+
             return prices
             
         except Exception as e:

@@ -53,16 +53,32 @@ def get_portfolio_summary(request):
 @router.get("/portfolio/history", response=PortfolioHistorySchema, tags=["Portfolio"])
 def get_portfolio_history(
     request,
-    timeframe: str = Query(..., description="Timeframe: 1D, 5D, 1M, 6M, YTD, 1Y, 5Y, MAX")
+    timeframe: str = Query(..., description="Timeframe: 1D, 5D, 1M, 3M, 6M, YTD")
 ):
-    """Get historical portfolio values for charting"""
+    """
+    Get historical portfolio values for charting.
+
+    Portfolio time-series are capped at YTD (year-to-date) as the maximum lookback.
+    This restriction is portfolio-specific; market/asset modules may still support
+    longer timeframes (1Y, 5Y, MAX).
+
+    Supported timeframes:
+    - 1D: Last 24 hours (hourly intervals)
+    - 5D: Last 5 days (hourly intervals)
+    - 1M: Last 30 days (daily intervals)
+    - 3M: Last 90 days (daily intervals)
+    - 6M: Last 180 days (daily intervals)
+    - YTD: Year-to-date (daily intervals)
+    """
     user = User.objects.first()
     if not user:
         raise HttpError(404, "No user found")
 
     portfolio = user.portfolio
 
-    valid_timeframes = ['1D', '5D', '1M', '6M', 'YTD', '1Y', '5Y', 'MAX']
+    # PORTFOLIO-SPECIFIC: YTD is the maximum timeframe
+    # (Market/asset endpoints may still use 1Y, 5Y, MAX)
+    valid_timeframes = ['1D', '5D', '1M', '3M', '6M', 'YTD']
     if timeframe not in valid_timeframes:
         raise HttpError(400, f"Invalid timeframe. Must be one of: {', '.join(valid_timeframes)}")
 

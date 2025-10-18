@@ -14,6 +14,7 @@ import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency, formatPercentage } from '../utils/formatters';
 import HoldingsList from '../components/HoldingsList';
 import PortfolioAllocationChart from '../components/PortfolioAllocationChart';
+import PortfolioPerformanceChart from '../components/PortfolioPerformanceChart';
 import TransactionsList from '../components/TransactionsList';
 
 const Portfolio = () => {
@@ -108,7 +109,7 @@ const Portfolio = () => {
 
         {currentTab === 0 && <HoldingsList />}
         {currentTab === 1 && <PortfolioAllocationChart />}
-        {currentTab === 2 && <Box>Performance content coming soon</Box>}
+        {currentTab === 2 && <PortfolioPerformanceChart />}
         {currentTab === 3 && <Box>Gains/Losses content coming soon</Box>}
         {currentTab === 4 && <TransactionsList />}
         {currentTab === 5 && <Box>Volatility content coming soon</Box>}

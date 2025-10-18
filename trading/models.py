@@ -37,7 +37,7 @@ class Portfolio(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username}'s Portfolio"
+        return f"{self.user.username}'s Portfolio | {self.created_at.date()}"
 
     @property
     def total_holdings_value(self):
