@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -12,17 +12,36 @@ import {
   Avatar,
   Button,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency, formatPercentage, formatLargeNumber } from '../utils/formatters';
 import TradeModal from './TradeModal';
+import apiService from '../services/api';
 
-const CryptocurrencyList = () => {
-  const { cryptocurrencies } = usePortfolio();
+const CryptocurrencyList = ({ category = null }) => {
+  const [cryptocurrencies, setCryptocurrencies] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [selectedCrypto, setSelectedCrypto] = useState(null);
+
+  // Fetch cryptocurrencies based on category filter
+  useEffect(() => {
+    const fetchCryptocurrencies = async () => {
+      setLoading(true);
+      try {
+        const data = await apiService.getCryptocurrencies(category);
+        setCryptocurrencies(data);
+      } catch (err) {
+        console.error('Error fetching cryptocurrencies:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCryptocurrencies();
+  }, [category]);
 
   const handleOpenTrade = (crypto) => {
     setSelectedCrypto(crypto);
@@ -33,6 +52,14 @@ const CryptocurrencyList = () => {
     setTradeModalOpen(false);
     setSelectedCrypto(null);
   };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   if (!cryptocurrencies || cryptocurrencies.length === 0) {
     return (

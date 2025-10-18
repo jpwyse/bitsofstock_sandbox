@@ -14,7 +14,7 @@ import {
   Chip,
 } from '@mui/material';
 import { usePortfolio } from '../context/PortfolioContext';
-import { formatCurrency, formatPercentage, formatCryptoQuantity } from '../utils/formatters';
+import { formatCurrency, formatPercentage, formatCryptoQuantity, formatLargeNumber } from '../utils/formatters';
 import TradeModal from './TradeModal';
 
 const HoldingsList = () => {
@@ -56,6 +56,8 @@ const HoldingsList = () => {
               <TableCell align="right">Current Price</TableCell>
               <TableCell align="right">Total Value</TableCell>
               <TableCell align="right">Gain/Loss</TableCell>
+              <TableCell align="right">Volume (24h)</TableCell>
+              <TableCell align="right">Market Cap</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -115,6 +117,16 @@ const HoldingsList = () => {
                       {formatPercentage(holding.gain_loss_percentage)}
                     </Typography>
                   </Box>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body2" color="text.secondary">
+                    {formatLargeNumber(holding.cryptocurrency.volume_24h)}
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body2" color="text.secondary">
+                    {formatLargeNumber(holding.cryptocurrency.market_cap)}
+                  </Typography>
                 </TableCell>
                 <TableCell align="right">
                   <Box display="flex" gap={1} justifyContent="flex-end">

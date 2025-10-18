@@ -30,8 +30,12 @@ class ApiService {
   }
 
   // Cryptocurrency endpoints
-  async getCryptocurrencies() {
-    const response = await fetch(`${API_BASE_URL}/cryptocurrencies`);
+  async getCryptocurrencies(category = null) {
+    // Only add category parameter if it's a non-null, non-empty string
+    const url = category && category !== 'null' && category.trim() !== ''
+      ? `${API_BASE_URL}/cryptocurrencies?category=${category}`
+      : `${API_BASE_URL}/cryptocurrencies`;
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error('Failed to fetch cryptocurrencies');
     }

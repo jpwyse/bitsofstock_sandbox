@@ -11,6 +11,9 @@ import {
   Box,
   Avatar,
   Chip,
+  Grid,
+  Card,
+  CardContent,
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -32,40 +35,62 @@ const TransactionsList = () => {
 
   return (
     <Box>
-      {/* Header with Title and Summary Cards */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 3, flexWrap: 'wrap' }}>
+      {/* Header with Title */}
+      <Box sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={600}>
           Transaction History
         </Typography>
-
-        {/* Transaction Summary Cards */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Paper sx={{ p: 2, minWidth: 150 }}>
-            <Typography variant="body2" color="text.secondary">
-              Total Transactions
-            </Typography>
-            <Typography variant="h6" fontWeight={600}>
-              {transactions.length}
-            </Typography>
-          </Paper>
-          <Paper sx={{ p: 2, minWidth: 150 }}>
-            <Typography variant="body2" color="text.secondary">
-              Buy Orders
-            </Typography>
-            <Typography variant="h6" fontWeight={600} color="success.main">
-              {transactions.filter(t => t.type === 'BUY').length}
-            </Typography>
-          </Paper>
-          <Paper sx={{ p: 2, minWidth: 150 }}>
-            <Typography variant="body2" color="text.secondary">
-              Sell Orders
-            </Typography>
-            <Typography variant="h6" fontWeight={600} color="error.main">
-              {transactions.filter(t => t.type === 'SELL').length}
-            </Typography>
-          </Paper>
-        </Box>
       </Box>
+
+      {/* Transaction Summary Cards */}
+      <Grid container spacing={3} mb={3}>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <Typography variant="body2" color="text.secondary">
+                  Total Transactions
+                </Typography>
+              </Box>
+              <Typography variant="h5" fontWeight={600}>
+                {transactions.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <TrendingUpIcon color="success" />
+                <Typography variant="body2" color="text.secondary">
+                  Buy Orders
+                </Typography>
+              </Box>
+              <Typography variant="h5" fontWeight={600} color="success.main">
+                {transactions.filter(t => t.type === 'BUY').length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <TrendingDownIcon color="error" />
+                <Typography variant="body2" color="text.secondary">
+                  Sell Orders
+                </Typography>
+              </Box>
+              <Typography variant="h5" fontWeight={600} color="error.main">
+                {transactions.filter(t => t.type === 'SELL').length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Transactions Table */}
       <TableContainer component={Paper}>

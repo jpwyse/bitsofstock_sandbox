@@ -1,4 +1,39 @@
-## Persistent Commit Log File
+## Commit Message Generation
+
+### When the user says: `update commit log`
+
+Claude MUST perform the following steps:
+
+1. **Run Git Commands:**
+   - Execute `git status` to see what files are staged
+   - Execute `git diff --staged` to analyze the specific changes
+
+2. **Generate a 1-Line Commit Message:**
+   - Analyze all staged changes
+   - Create a concise, descriptive commit message (50-72 characters ideal)
+   - Follow conventional commit format when appropriate (e.g., "feat:", "fix:", "refactor:", "docs:")
+   - Focus on the "what" and "why" of the changes
+   - Make it copy-pastable (no backticks, quotes, or formatting around it)
+
+3. **Present the Commit Message:**
+   - Display the commit message clearly labeled
+   - Format it so the user can easily copy and paste it into VSCode's commit message field
+   - Example output format:
+     ```
+     Suggested commit message:
+
+     refactor: remove portfolio performance comparison feature
+     ```
+
+4. **Important Details:**
+   - **Repository:** GitHub username is `jpwyse`
+   - **Branch:** Typically `main` unless specified otherwise
+   - User will copy the message and commit via VSCode GUI
+   - User will then push to GitHub manually
+
+---
+
+## Persistent Commit Log File (DEPRECATED - No longer maintained)
 
 ### CRITICAL: Claude must maintain docs/COMMIT_LOG.md
 
@@ -6,30 +41,7 @@
 
 **Purpose:** Permanent record of all commits with timestamps and file changes
 
-**Rules for Updating the Commit Log:**
-
-When the user says: `update commit log - [commit message]`, Claude MUST:
-
-1. **Run Git Commands:**
-   - Execute `git status` to see what files have changed
-   - Execute `git diff --staged` to analyze the specific changes
-
-2. **Update COMMIT_LOG.md:**
-   - Add new commit entry in the format shown in the template
-   - Update statistics section (total commits, files, lines, dates)
-   - Include specific line numbers and describe what each section does
-   - Use medium detail level - not too verbose, not too brief
-
-3. **Important Details:**
-   - **Repository:** GitHub username is `jpwyse`
-   - **Timezone:** Use EST (Eastern Standard Time)
-   - **Commit Message:** Use the message provided in the trigger phrase
-   - **Branch:** Typically `main` unless specified otherwise
-   - **Format:** Follow the exact format shown in COMMIT_LOG.md template
-
-4. **Process:**
-   - Save the updated COMMIT_LOG.md file
-   - User will then stage it in VSCode before pushing
+**Note:** This section is kept for reference but is no longer actively maintained. The focus is now on generating copy-pastable commit messages for the user.
 
 ---
 

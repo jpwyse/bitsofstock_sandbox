@@ -69,15 +69,30 @@ class Portfolio(models.Model):
 
 class Cryptocurrency(models.Model):
     """Cryptocurrency information"""
+
+    class Category(models.TextChoices):
+        CRYPTO = 'CRYPTO', 'Cryptocurrency'
+        STABLECOIN = 'STABLECOIN', 'Stablecoin'
+        DEFI = 'DEFI', 'DeFi'
+        NFT = 'NFT', 'NFT'
+        MEME = 'MEME', 'Meme'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     symbol = models.CharField(max_length=10, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     coingecko_id = models.CharField(max_length=50, unique=True)
     icon_url = models.URLField(max_length=500)
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.CRYPTO,
+        db_index=True,
+        help_text="Category of cryptocurrency for filtering and organization"
+    )
     current_price = models.DecimalField(
-        max_digits=20, 
-        decimal_places=8, 
-        null=True, 
+        max_digits=20,
+        decimal_places=8,
+        null=True,
         blank=True
     )
     price_change_24h = models.DecimalField(
@@ -198,10 +213,17 @@ class Transaction(models.Model):
         decimal_places=8
     )
     total_amount = models.DecimalField(
-        max_digits=20, 
+        max_digits=20,
         decimal_places=2
     )
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+    realized_gain_loss = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Realized gain or loss from this trade (0 for BUY, calculated for SELL). Future extension: fees/commissions."
+    )
 
     class Meta:
         ordering = ['-timestamp']

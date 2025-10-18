@@ -86,9 +86,10 @@ class TradingService:
                     quantity=quantity,
                     price_per_unit=cryptocurrency.current_price,
                     total_amount=amount_usd,
-                    timestamp=timezone.now()
+                    timestamp=timezone.now(),
+                    realized_gain_loss=Decimal('0.00')  # BUY transactions have no realized gain/loss
                 )
-                
+
                 logger.info(f"Buy executed: {quantity} {cryptocurrency.symbol} for ${amount_usd}")
                 return True, txn, None
                 
@@ -142,10 +143,14 @@ class TradingService:
         
         try:
             with transaction.atomic():
+                # Calculate realized gain/loss BEFORE updating holdings
+                # Formula: (sale_price - average_cost_basis) × quantity_sold
+                realized_gain_loss = (cryptocurrency.current_price - holding.average_purchase_price) * quantity
+
                 # Add cash
                 portfolio.cash_balance += amount_usd
                 portfolio.save()
-                
+
                 # Update or delete holding
                 if quantity == holding.quantity:
                     # Selling entire position
@@ -157,7 +162,7 @@ class TradingService:
                     holding.total_cost_basis -= cost_basis_sold
                     # Average purchase price remains the same
                     holding.save()
-                
+
                 # Create transaction record
                 txn = Transaction.objects.create(
                     portfolio=portfolio,
@@ -166,10 +171,11 @@ class TradingService:
                     quantity=quantity,
                     price_per_unit=cryptocurrency.current_price,
                     total_amount=amount_usd,
-                    timestamp=timezone.now()
+                    timestamp=timezone.now(),
+                    realized_gain_loss=realized_gain_loss
                 )
-                
-                logger.info(f"Sell executed: {quantity} {cryptocurrency.symbol} for ${amount_usd}")
+
+                logger.info(f"Sell executed: {quantity} {cryptocurrency.symbol} for ${amount_usd} | Realized P&L: ${realized_gain_loss}")
                 return True, txn, None
                 
         except Exception as e:

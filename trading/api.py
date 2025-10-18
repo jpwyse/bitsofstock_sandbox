@@ -111,7 +111,9 @@ def get_holdings(request):
                 "symbol": holding.cryptocurrency.symbol,
                 "name": holding.cryptocurrency.name,
                 "icon_url": holding.cryptocurrency.icon_url,
-                "current_price": holding.cryptocurrency.current_price or Decimal('0')
+                "current_price": holding.cryptocurrency.current_price or Decimal('0'),
+                "volume_24h": holding.cryptocurrency.volume_24h,
+                "market_cap": holding.cryptocurrency.market_cap
             },
             "quantity": holding.quantity,
             "average_purchase_price": holding.average_purchase_price,
@@ -127,10 +129,19 @@ def get_holdings(request):
 # Cryptocurrency Endpoints
 
 @router.get("/cryptocurrencies", response=List[CryptocurrencySchema], tags=["Cryptocurrencies"])
-def get_cryptocurrencies(request):
-    """Get all available cryptocurrencies"""
-    cryptos = Cryptocurrency.objects.filter(is_active=True).all()
-    
+def get_cryptocurrencies(
+    request,
+    category: Optional[str] = Query(None, description="Filter by category: CRYPTO, STABLECOIN, DEFI, NFT, MEME")
+):
+    """Get all available cryptocurrencies, optionally filtered by category"""
+    cryptos = Cryptocurrency.objects.filter(is_active=True)
+
+    # Filter by category if provided and not empty/null
+    if category and category.strip() and category.upper() != 'NULL':
+        cryptos = cryptos.filter(category=category.upper())
+
+    cryptos = cryptos.all()
+
     return [
         {
             "id": str(crypto.id),
@@ -138,6 +149,7 @@ def get_cryptocurrencies(request):
             "name": crypto.name,
             "coingecko_id": crypto.coingecko_id,
             "icon_url": crypto.icon_url,
+            "category": crypto.category,
             "current_price": crypto.current_price,
             "price_change_24h": crypto.price_change_24h,
             "volume_24h": crypto.volume_24h,
@@ -152,17 +164,18 @@ def get_cryptocurrencies(request):
 def get_cryptocurrency_detail(request, crypto_id: str):
     """Get detailed cryptocurrency information"""
     crypto = get_object_or_404(Cryptocurrency, id=crypto_id)
-    
+
     # Get 7-day price history
     coingecko_service = CoinGeckoService()
     price_history = coingecko_service.get_historical_prices(crypto.coingecko_id, 7)
-    
+
     return {
         "id": str(crypto.id),
         "symbol": crypto.symbol,
         "name": crypto.name,
         "coingecko_id": crypto.coingecko_id,
         "icon_url": crypto.icon_url,
+        "category": crypto.category,
         "current_price": crypto.current_price,
         "price_change_24h": crypto.price_change_24h,
         "volume_24h": crypto.volume_24h,
@@ -202,7 +215,7 @@ def execute_buy(request, payload: BuyRequestSchema):
     
     # Refresh portfolio
     portfolio.refresh_from_db()
-    
+
     return {
         "success": True,
         "transaction": {
@@ -216,7 +229,8 @@ def execute_buy(request, payload: BuyRequestSchema):
             "quantity": transaction.quantity,
             "price_per_unit": transaction.price_per_unit,
             "total_amount": transaction.total_amount,
-            "timestamp": transaction.timestamp
+            "timestamp": transaction.timestamp,
+            "realized_gain_loss": transaction.realized_gain_loss
         },
         "updated_portfolio": {
             "cash_balance": portfolio.cash_balance,
@@ -253,7 +267,7 @@ def execute_sell(request, payload: SellRequestSchema):
     
     # Refresh portfolio
     portfolio.refresh_from_db()
-    
+
     return {
         "success": True,
         "transaction": {
@@ -267,7 +281,8 @@ def execute_sell(request, payload: SellRequestSchema):
             "quantity": transaction.quantity,
             "price_per_unit": transaction.price_per_unit,
             "total_amount": transaction.total_amount,
-            "timestamp": transaction.timestamp
+            "timestamp": transaction.timestamp,
+            "realized_gain_loss": transaction.realized_gain_loss
         },
         "updated_portfolio": {
             "cash_balance": portfolio.cash_balance,
@@ -308,7 +323,8 @@ def get_transactions(
             "quantity": txn.quantity,
             "price_per_unit": txn.price_per_unit,
             "total_amount": txn.total_amount,
-            "timestamp": txn.timestamp
+            "timestamp": txn.timestamp,
+            "realized_gain_loss": txn.realized_gain_loss
         }
         for txn in transactions
     ]

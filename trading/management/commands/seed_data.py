@@ -42,28 +42,36 @@ class Command(BaseCommand):
         coingecko_service = CoinGeckoService()
         
         cryptos_data = [
-            ('BTC', 'Bitcoin', 'bitcoin', 'https://cryptologos.cc/logos/bitcoin-btc-logo.png'),
-            ('ETH', 'Ethereum', 'ethereum', 'https://cryptologos.cc/logos/ethereum-eth-logo.png'),
-            ('SOL', 'Solana', 'solana', 'https://cryptologos.cc/logos/solana-sol-logo.png'),
-            ('XRP', 'XRP', 'ripple', 'https://cryptologos.cc/logos/xrp-xrp-logo.png'),
-            ('USDC', 'USD Coin', 'usd-coin', 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png'),
+            ('BTC', 'Bitcoin', 'bitcoin', 'https://cryptologos.cc/logos/bitcoin-btc-logo.png', 'CRYPTO'),
+            ('ETH', 'Ethereum', 'ethereum', 'https://cryptologos.cc/logos/ethereum-eth-logo.png', 'CRYPTO'),
+            ('SOL', 'Solana', 'solana', 'https://cryptologos.cc/logos/solana-sol-logo.png', 'CRYPTO'),
+            ('XRP', 'XRP', 'ripple', 'https://cryptologos.cc/logos/xrp-xrp-logo.png', 'CRYPTO'),
+            ('USDC', 'USD Coin', 'usd-coin', 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', 'STABLECOIN'),
         ]
-        
+
         cryptos = {}
-        for symbol, name, coingecko_id, icon_url in cryptos_data:
+        for symbol, name, coingecko_id, icon_url, category in cryptos_data:
             crypto, created = Cryptocurrency.objects.get_or_create(
                 symbol=symbol,
                 defaults={
                     'name': name,
                     'coingecko_id': coingecko_id,
                     'icon_url': icon_url,
+                    'category': category,
                     'is_active': True
                 }
             )
+
+            # Update category if crypto already exists
+            if not created and crypto.category != category:
+                crypto.category = category
+                crypto.save()
+                self.stdout.write(self.style.SUCCESS(f'Updated {symbol} category to {category}'))
+
             cryptos[symbol] = crypto
-            
+
             if created:
-                self.stdout.write(self.style.SUCCESS(f'Created cryptocurrency: {symbol}'))
+                self.stdout.write(self.style.SUCCESS(f'Created cryptocurrency: {symbol} ({category})'))
         
         # Fetch current prices
         self.stdout.write('Fetching current prices...')

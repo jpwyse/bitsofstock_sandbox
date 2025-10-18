@@ -1,21 +1,21 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, Grid, Card, CardContent } from '@mui/material';
 import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency, formatPercentage } from '../utils/formatters';
 
-// Define colors for different holdings
+// Updated colors to match project theme (purple/violet shades)
 const COLORS = [
-  '#0088FE', // Blue
-  '#00C49F', // Teal
-  '#FFBB28', // Yellow
-  '#FF8042', // Orange
-  '#8884D8', // Purple
-  '#82CA9D', // Green
-  '#FFC658', // Gold
-  '#FF6B9D', // Pink
+  '#5B4FDB', // Primary purple
+  '#7C3AED', // Medium purple
+  '#A78BFA', // Light purple
   '#C084FC', // Violet
-  '#38BDF8', // Sky Blue
+  '#8B5CF6', // Deep violet
+  '#9333EA', // Rich purple
+  '#6366F1', // Indigo
+  '#818CF8', // Light indigo
+  '#A855F7', // Bright purple
+  '#D946EF', // Fuchsia
 ];
 
 const PortfolioAllocationChart = () => {
@@ -99,95 +99,118 @@ const PortfolioAllocationChart = () => {
     );
   }
 
+  // Calculate largest holding data
+  const largestHolding = chartData.length > 0
+    ? chartData.reduce((max, h) => h.value > max.value ? h : max)
+    : null;
+
   return (
     <Box>
-      <Typography variant="h5" gutterBottom fontWeight={600} mb={3}>
-        Portfolio Allocation
-      </Typography>
+      {/* Header with Title */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight={600}>
+          Portfolio Allocation
+        </Typography>
+      </Box>
 
+      {/* Summary Statistics Cards */}
+      <Grid container spacing={3} mb={3}>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Total Holdings Value
+              </Typography>
+              <Typography variant="h5" fontWeight={600}>
+                {formatCurrency(portfolio?.total_holdings_value || 0)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Number of Assets
+              </Typography>
+              <Typography variant="h5" fontWeight={600}>
+                {holdings.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Largest Holding
+              </Typography>
+              <Typography variant="h5" fontWeight={600}>
+                {largestHolding
+                  ? `${largestHolding.name} (${formatPercentage(largestHolding.percentage / 100)})`
+                  : 'N/A'}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Chart Container */}
       <Paper sx={{ p: 4, borderRadius: 2 }}>
-        {/* Summary Statistics */}
-        <Box sx={{ mb: 4, display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <Paper sx={{ p: 2, minWidth: 200 }}>
-          <Typography variant="body2" color="text.secondary">
-            Total Holdings Value
-          </Typography>
-          <Typography variant="h6" fontWeight={600}>
-            {formatCurrency(portfolio?.total_holdings_value || 0)}
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 2, minWidth: 200 }}>
-          <Typography variant="body2" color="text.secondary">
-            Number of Assets
-          </Typography>
-          <Typography variant="h6" fontWeight={600}>
-            {holdings.length}
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 2, minWidth: 200 }}>
-          <Typography variant="body2" color="text.secondary">
-            Largest Holding
-          </Typography>
-          <Typography variant="h6" fontWeight={600}>
-            {chartData.length > 0
-              ? `${chartData.reduce((max, h) => h.value > max.value ? h : max).name} (${formatPercentage(chartData.reduce((max, h) => h.value > max.value ? h : max).percentage / 100)})`
-              : 'N/A'}
-          </Typography>
-        </Paper>
-      </Box>
-
-      {/* Asset Allocation Breakdown */}
-      <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
-        {chartData.map((data, index) => (
-          <Box
-            key={`asset-${index}`}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              minWidth: '200px',
-            }}
-          >
+        {/* Asset Allocation Breakdown */}
+        <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+          {chartData.map((data, index) => (
             <Box
+              key={`asset-${index}`}
               sx={{
-                width: 16,
-                height: 16,
-                backgroundColor: COLORS[index % COLORS.length],
-                borderRadius: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                minWidth: '200px',
               }}
-            />
-            <Box>
-              <Typography variant="body2" fontWeight={600}>
-                {data.fullName} ({data.name})
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatCurrency(data.value)} • {formatPercentage(data.percentage / 100)}
-              </Typography>
+            >
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
+                  backgroundColor: COLORS[index % COLORS.length],
+                  borderRadius: '2px',
+                }}
+              />
+              <Box>
+                <Typography variant="body2" fontWeight={600}>
+                  {data.fullName} ({data.name})
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatCurrency(data.value)} • {formatPercentage(data.percentage / 100)}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-        ))}
-      </Box>
+          ))}
+        </Box>
 
-      {/* Pie Chart */}
-      <ResponsiveContainer width="100%" height={500}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={renderCustomizedLabel}
-            outerRadius={150}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-        </PieChart>
-      </ResponsiveContainer>
+        {/* Pie Chart - Larger size */}
+        <ResponsiveContainer width="100%" height={600}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={renderCustomizedLabel}
+              outerRadius={200}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
       </Paper>
     </Box>
   );

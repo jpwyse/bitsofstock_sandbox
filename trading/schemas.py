@@ -13,6 +13,7 @@ class CryptocurrencySchema(Schema):
     name: str
     coingecko_id: str
     icon_url: str
+    category: Optional[str] = 'CRYPTO'
     current_price: Optional[Decimal] = None
     price_change_24h: Optional[Decimal] = None
     volume_24h: Optional[Decimal] = None
@@ -52,6 +53,8 @@ class HoldingCryptoSchema(Schema):
     name: str
     icon_url: str
     current_price: Decimal
+    volume_24h: Optional[Decimal] = None
+    market_cap: Optional[Decimal] = None
 
 
 class HoldingSchema(Schema):
@@ -84,6 +87,7 @@ class TransactionSchema(Schema):
     price_per_unit: Decimal
     total_amount: Decimal
     timestamp: datetime
+    realized_gain_loss: Optional[Decimal] = None
 
 
 class TransactionListSchema(Schema):

@@ -13,6 +13,17 @@ export const formatCurrency = (value, decimals = 2) => {
   }).format(numValue);
 };
 
+export const formatCurrencyWithSign = (value, decimals = 2) => {
+  if (value === null || value === undefined) return '$0.00';
+
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  const formatted = formatCurrency(Math.abs(numValue), decimals);
+
+  if (numValue > 0) return `+${formatted}`;
+  if (numValue < 0) return `-${formatted}`;
+  return formatted;
+};
+
 export const formatPercentage = (value, decimals = 2) => {
   if (value === null || value === undefined) return '0.00%';
 

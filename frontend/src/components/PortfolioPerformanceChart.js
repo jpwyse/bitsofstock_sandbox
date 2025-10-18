@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
+  CardContent,
   Typography,
   ToggleButtonGroup,
   ToggleButton,
   CircularProgress,
   Alert,
-  Stack,
+  Grid,
 } from '@mui/material';
 import {
   AreaChart,
@@ -179,42 +180,125 @@ const PortfolioPerformanceChart = () => {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+      {/* Header with Title */}
+      <Box sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={600}>
           Portfolio Performance
         </Typography>
+      </Box>
 
-        {/* Timeframe Controls */}
-        <ToggleButtonGroup
-          value={timeframe}
-          exclusive
-          onChange={handleTimeframeChange}
-          aria-label="timeframe selection"
-          size="small"
-        >
-          {timeframes.map((tf) => (
-            <ToggleButton
-              key={tf}
-              value={tf}
-              aria-label={`${tf} timeframe`}
-              sx={{
-                px: 2,
-                py: 1,
-                fontWeight: 500,
-                '&.Mui-selected': {
-                  backgroundColor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: 'primary.dark',
-                  },
-                },
-              }}
+      {/* Summary Statistics Cards with Timeframe Toggle */}
+      <Grid container spacing={3} mb={3}>
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Initial Investment
+              </Typography>
+              <Typography variant="h5" fontWeight={600}>
+                {formatCurrency(baseline)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Current Value
+              </Typography>
+              <Typography variant="h5" fontWeight={600}>
+                {formatCurrency(portfolio?.total_portfolio_value || 0)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Total Gain/Loss
+              </Typography>
+              <Typography
+                variant="h5"
+                fontWeight={600}
+                color={
+                  portfolio?.total_gain_loss >= 0 ? 'success.main' : 'error.main'
+                }
+              >
+                {portfolio?.total_gain_loss >= 0 ? '+' : ''}
+                {formatCurrency(portfolio?.total_gain_loss || 0)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Total Return
+              </Typography>
+              <Typography
+                variant="h5"
+                fontWeight={600}
+                color={
+                  parseFloat(portfolio?.total_gain_loss_percentage || 0) >= 0
+                    ? 'success.main'
+                    : 'error.main'
+                }
+              >
+                {parseFloat(portfolio?.total_gain_loss_percentage || 0) >= 0 ? '+' : ''}
+                {parseFloat(portfolio?.total_gain_loss_percentage || 0).toFixed(2)}%
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Timeframe Toggle as 5th Grid Item - Uses flexGrow to push to far right */}
+        <Grid item xs={12} md="auto" sx={{ flexGrow: { md: 1 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: { xs: 'center', md: 'flex-end' },
+              alignItems: 'center',
+              height: '100%',
+            }}
+          >
+            <ToggleButtonGroup
+              value={timeframe}
+              exclusive
+              onChange={handleTimeframeChange}
+              aria-label="timeframe selection"
+              size="small"
             >
-              {tf}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </Stack>
+              {timeframes.map((tf) => (
+                <ToggleButton
+                  key={tf}
+                  value={tf}
+                  aria-label={`${tf} timeframe`}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    fontWeight: 500,
+                    '&.Mui-selected': {
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: 'primary.dark',
+                      },
+                    },
+                  }}
+                >
+                  {tf}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+        </Grid>
+      </Grid>
 
       <Card sx={{ p: 3 }}>
         {/* Chart */}
@@ -275,61 +359,6 @@ const PortfolioPerformanceChart = () => {
             />
           </AreaChart>
         </ResponsiveContainer>
-
-        {/* Performance Summary */}
-        <Box mt={3} display="flex" gap={3} justifyContent="center" flexWrap="wrap">
-          <Box textAlign="center">
-            <Typography variant="caption" color="text.secondary">
-              Initial Investment
-            </Typography>
-            <Typography variant="h6" fontWeight={600}>
-              {formatCurrency(baseline)}
-            </Typography>
-          </Box>
-
-          <Box textAlign="center">
-            <Typography variant="caption" color="text.secondary">
-              Current Value
-            </Typography>
-            <Typography variant="h6" fontWeight={600}>
-              {formatCurrency(portfolio?.total_portfolio_value || 0)}
-            </Typography>
-          </Box>
-
-          <Box textAlign="center">
-            <Typography variant="caption" color="text.secondary">
-              Total Gain/Loss
-            </Typography>
-            <Typography
-              variant="h6"
-              fontWeight={600}
-              color={
-                portfolio?.total_gain_loss >= 0 ? 'success.main' : 'error.main'
-              }
-            >
-              {portfolio?.total_gain_loss >= 0 ? '+' : ''}
-              {formatCurrency(portfolio?.total_gain_loss || 0)}
-            </Typography>
-          </Box>
-
-          <Box textAlign="center">
-            <Typography variant="caption" color="text.secondary">
-              Total Return
-            </Typography>
-            <Typography
-              variant="h6"
-              fontWeight={600}
-              color={
-                parseFloat(portfolio?.total_gain_loss_percentage || 0) >= 0
-                  ? 'success.main'
-                  : 'error.main'
-              }
-            >
-              {parseFloat(portfolio?.total_gain_loss_percentage || 0) >= 0 ? '+' : ''}
-              {parseFloat(portfolio?.total_gain_loss_percentage || 0).toFixed(2)}%
-            </Typography>
-          </Box>
-        </Box>
       </Card>
     </Box>
   );
