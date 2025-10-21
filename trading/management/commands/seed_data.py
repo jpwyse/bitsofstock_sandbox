@@ -52,31 +52,39 @@ class Command(BaseCommand):
         coingecko_service = CoinGeckoService()
         
         cryptos_data = [
-            ('BTC', 'Bitcoin', 'bitcoin', 'https://cryptologos.cc/logos/bitcoin-btc-logo.png', 'CRYPTO'),
-            ('ETH', 'Ethereum', 'ethereum', 'https://cryptologos.cc/logos/ethereum-eth-logo.png', 'CRYPTO'),
-            ('SOL', 'Solana', 'solana', 'https://cryptologos.cc/logos/solana-sol-logo.png', 'CRYPTO'),
-            ('XRP', 'XRP', 'ripple', 'https://cryptologos.cc/logos/xrp-xrp-logo.png', 'CRYPTO'),
-            ('USDC', 'USD Coin', 'usd-coin', 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', 'STABLECOIN'),
+            ('BTC', 'Bitcoin', 'bitcoin', 'BTC-USD', 'https://cryptologos.cc/logos/bitcoin-btc-logo.png', 'CRYPTO'),
+            ('ETH', 'Ethereum', 'ethereum', 'ETH-USD', 'https://cryptologos.cc/logos/ethereum-eth-logo.png', 'CRYPTO'),
+            ('SOL', 'Solana', 'solana', 'SOL-USD', 'https://cryptologos.cc/logos/solana-sol-logo.png', 'CRYPTO'),
+            ('XRP', 'XRP', 'ripple', 'XRP-USD', 'https://cryptologos.cc/logos/xrp-xrp-logo.png', 'CRYPTO'),
+            ('USDC', 'USD Coin', 'usd-coin', 'USDC-USD', 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', 'STABLECOIN'),
         ]
 
         cryptos = {}
-        for symbol, name, coingecko_id, icon_url, category in cryptos_data:
+        for symbol, name, coingecko_id, yfinance_symbol, icon_url, category in cryptos_data:
             crypto, created = Cryptocurrency.objects.get_or_create(
                 symbol=symbol,
                 defaults={
                     'name': name,
                     'coingecko_id': coingecko_id,
+                    'yfinance_symbol': yfinance_symbol,
                     'icon_url': icon_url,
                     'category': category,
                     'is_active': True
                 }
             )
 
-            # Update category if crypto already exists
-            if not created and crypto.category != category:
-                crypto.category = category
-                crypto.save()
-                self.stdout.write(self.style.SUCCESS(f'Updated {symbol} category to {category}'))
+            # Update category and yfinance_symbol if crypto already exists
+            updated = False
+            if not created:
+                if crypto.category != category:
+                    crypto.category = category
+                    updated = True
+                if crypto.yfinance_symbol != yfinance_symbol:
+                    crypto.yfinance_symbol = yfinance_symbol
+                    updated = True
+                if updated:
+                    crypto.save()
+                    self.stdout.write(self.style.SUCCESS(f'Updated {symbol} (category: {category}, yfinance: {yfinance_symbol})'))
 
             cryptos[symbol] = crypto
 

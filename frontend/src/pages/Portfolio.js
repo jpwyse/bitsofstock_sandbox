@@ -37,7 +37,14 @@ const Portfolio = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4, pb: 6 }}>
       {/* Portfolio Summary */}
-      <Box mb={4}>
+      <Box
+        mb={4}
+        sx={{
+          maxWidth: '90%',
+          mx: 'auto',
+          px: 2
+        }}
+      >
         <Typography variant="h3" gutterBottom fontWeight={700}>
           Portfolio Overview
         </Typography>
@@ -98,7 +105,13 @@ const Portfolio = () => {
       </Box>
 
       {/* Tabs for Dashboard Views */}
-      <Box>
+      <Box
+        sx={{
+          maxWidth: '90%',
+          mx: 'auto',
+          px: 2
+        }}
+      >
         <Tabs value={currentTab} onChange={handleTabChange} sx={{ mb: 3 }}>
           <Tab label="Holdings" />
           <Tab label="Allocation" />

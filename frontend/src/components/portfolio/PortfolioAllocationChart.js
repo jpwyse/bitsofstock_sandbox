@@ -157,9 +157,9 @@ const PortfolioAllocationChart = () => {
       </Grid>
 
       {/* Chart Container */}
-      <Paper sx={{ p: 4, borderRadius: 2 }}>
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
         {/* Asset Allocation Breakdown */}
-        <Box sx={{ mb: 0, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+        <Box sx={{ mb: -5, display: 'flex', flexWrap: 'wrap', gap: 0, justifyContent: 'center' }}>
           {chartData.map((data, index) => (
             <Box
               key={`asset-${index}`}
@@ -199,7 +199,7 @@ const PortfolioAllocationChart = () => {
               cy="50%"
               labelLine={false}
               label={renderCustomizedLabel}
-              outerRadius="75%"
+              outerRadius="70%"
               fill="#8884d8"
               dataKey="value"
             >

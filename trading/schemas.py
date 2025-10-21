@@ -132,6 +132,7 @@ class PricePointSchema(Schema):
 class MarketPricePointSchema(Schema):
     date: str  # YYYY-MM-DD format
     price: Decimal
+    timestamp: Optional[str] = None  # YYYY-MM-DD HH:MM:SS format for intraday
 
 
 # News Schemas

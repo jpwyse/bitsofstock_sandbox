@@ -1,124 +1,132 @@
 // API service for communicating with Django backend
 
 const API_BASE_URL = '/api/trading';
+const DEFAULT_TIMEOUT_MS = 10000;
+
+/**
+ * Centralized request helper with robust error handling
+ *
+ * Features:
+ * - Automatic query param encoding
+ * - 10s timeout with AbortController
+ * - Graceful 204 No Content handling
+ * - Backend error message extraction
+ * - AbortSignal support for cancellable requests
+ */
+async function request(path, { method = 'GET', params = {}, body, signal } = {}) {
+  // Build URL with proper query param encoding
+  const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
+  Object.entries(params || {}).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
+  });
+
+  // Setup timeout with AbortController
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const finalSignal = signal || controller.signal;
+
+  try {
+    const res = await fetch(url.toString(), {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: finalSignal,
+    });
+
+    // Handle 204 No Content gracefully
+    if (res.status === 204) return null;
+
+    const text = await res.text();
+    const isJson = (res.headers.get('content-type') || '').includes('application/json');
+    const payload = text && isJson ? JSON.parse(text) : (text || null);
+
+    // Extract backend error message
+    if (!res.ok) {
+      const msg =
+        (payload && (payload.detail || payload.message || payload.error)) ||
+        `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+
+    return payload;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 class ApiService {
   // Portfolio endpoints
   async getPortfolioSummary() {
-    const response = await fetch(`${API_BASE_URL}/portfolio/summary`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch portfolio summary');
-    }
-    return response.json();
+    return request('/portfolio/summary');
   }
 
   async getPortfolioHistory(timeframe = '1M') {
-    const response = await fetch(`${API_BASE_URL}/portfolio/history?timeframe=${timeframe}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch portfolio history');
-    }
-    return response.json();
+    return request('/portfolio/history', { params: { timeframe } });
   }
 
   // Holdings endpoints
   async getHoldings() {
-    const response = await fetch(`${API_BASE_URL}/holdings`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch holdings');
-    }
-    return response.json();
+    return request('/holdings');
   }
 
   // Cryptocurrency endpoints
   async getCryptocurrencies() {
-    const response = await fetch(`${API_BASE_URL}/cryptocurrencies`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch cryptocurrencies');
-    }
-    return response.json();
+    return request('/cryptocurrencies');
   }
 
   async getCryptocurrencyDetail(cryptoId) {
-    const response = await fetch(`${API_BASE_URL}/cryptocurrencies/${cryptoId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch cryptocurrency detail');
-    }
-    return response.json();
+    return request(`/cryptocurrencies/${encodeURIComponent(cryptoId)}`);
   }
 
   // Trading endpoints
   async executeBuy(cryptocurrencyId, amountUsd = null, quantity = null) {
-    const response = await fetch(`${API_BASE_URL}/trades/buy`, {
+    return request('/trades/buy', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        cryptocurrency_id: cryptocurrencyId,
-        amount_usd: amountUsd,
-        quantity: quantity,
-      }),
+      body: { cryptocurrency_id: cryptocurrencyId, amount_usd: amountUsd, quantity },
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to execute buy order');
-    }
-    return response.json();
   }
 
   async executeSell(cryptocurrencyId, amountUsd = null, quantity = null) {
-    const response = await fetch(`${API_BASE_URL}/trades/sell`, {
+    return request('/trades/sell', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        cryptocurrency_id: cryptocurrencyId,
-        amount_usd: amountUsd,
-        quantity: quantity,
-      }),
+      body: { cryptocurrency_id: cryptocurrencyId, amount_usd: amountUsd, quantity },
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to execute sell order');
-    }
-    return response.json();
   }
 
   // Transaction endpoints
   async getTransactions(page = 1, type = 'ALL') {
-    const response = await fetch(`${API_BASE_URL}/transactions?page=${page}&type=${type}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch transactions');
-    }
-    return response.json();
+    return request('/transactions', { params: { page, type } });
   }
 
   // News endpoints
   async getCryptoNews(limit = 20) {
-    const response = await fetch(`${API_BASE_URL}/news/crypto?limit=${limit}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch crypto news');
-    }
-    return response.json();
+    return request('/news/crypto', { params: { limit } });
   }
 
   // Market endpoints
-  async getCryptoPriceHistory(symbol, timeframe = '1Y') {
-    const response = await fetch(`${API_BASE_URL}/market/crypto/history?symbol=${symbol}&timeframe=${timeframe}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch crypto price history');
-    }
-    return response.json();
+  async getCryptoPriceHistory(symbol, timeframe = '1Y', { signal } = {}) {
+    const data = await request('/market/crypto/history', {
+      params: { symbol, timeframe },
+      signal,
+    });
+    // Backend may return 204→null for no data; normalize to []
+    return Array.isArray(data) ? data : [];
+  }
+
+  // Price History endpoint (new - uses /price_history)
+  async getPriceHistory(symbol, period = '1y', { signal } = {}) {
+    const data = await request('/price_history', {
+      params: { symbol, period },
+      signal,
+    });
+
+    // Normalize to expected structure
+    return data || { count: 0, data: [] };
   }
 
   // User endpoints
   async getUserAccount() {
-    const response = await fetch(`${API_BASE_URL}/user/account`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch user account');
-    }
-    return response.json();
+    return request('/user/account');
   }
 }
 

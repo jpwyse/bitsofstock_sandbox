@@ -5,6 +5,9 @@ from django.shortcuts import get_object_or_404
 from decimal import Decimal
 from typing import List, Optional
 from datetime import datetime
+import yfinance as yf
+import pandas as pd
+
 from trading.models import Portfolio, Cryptocurrency, Holding, Transaction, User
 from trading.schemas import (
     PortfolioSummarySchema,
@@ -27,7 +30,7 @@ from trading.services.portfolio import PortfolioService
 from trading.services.coingecko import CoinGeckoService
 from trading.services.finnhub import FinnhubService
 from trading.services.yfinance import YFinanceService
-
+from trading.services.yfinance import fetch_price_history_payload
 # Create your api's here.
 
 router = Router()
@@ -389,49 +392,120 @@ def get_user_account(request):
 
 # Market Endpoints
 
-@router.get("/market/crypto/history", response=List[MarketPricePointSchema], tags=["Market"])
-def get_crypto_price_history(
-    request,
-    symbol: str = Query(..., description="Cryptocurrency symbol (e.g., BTC)"),
-    timeframe: str = Query("1Y", description="Timeframe: 1D, 5D, 1M, 3M, 6M, YTD, 1Y, 5Y, ALL")
-):
+@router.get("/price_history", tags=["Market"])
+def price_history(request, symbol: str, period: str = "1y", interval: str = "1d"):
     """
-    Get historical price data for a cryptocurrency using yfinance.
+    Fetch historical price/volume for a symbol via yfinance.
 
-    Supports timeframes from 1 day to maximum available history.
-    Data is fetched from Yahoo Finance and returned with daily or intraday intervals
-    depending on the timeframe selected.
-
-    Returns a list of price points with date (YYYY-MM-DD) and price (Decimal).
+    Rules:
+      - If period == "1d"  -> interval = "5m"
+      - If period == "5d"  -> interval = "15m"
+      - Always include 'date' (YYYY-MM-DD)
+      - For intraday (1d/5d) also include 'datetime' (YYYY-MM-DD HH:MM)
+      - Only return close, volume (+ date[/datetime])
     """
-    # Validate timeframe
-    valid_timeframes = ['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'ALL']
-    if timeframe not in valid_timeframes:
-        raise HttpError(400, f"Invalid timeframe. Must be one of: {', '.join(valid_timeframes)}")
-
     try:
-        # Get cryptocurrency from database to access yfinance_symbol if available
-        crypto = Cryptocurrency.objects.filter(symbol=symbol.upper()).first()
+        # Normalize overrides for intraday periods
+        period_norm = period.strip().lower()
+        interval_norm = interval.strip().lower()
 
-        if not crypto:
-            raise HttpError(404, f"Cryptocurrency '{symbol}' not found")
+        if period_norm == "1d":
+            interval_norm = "5m"
+        elif period_norm == "5d":
+            interval_norm = "15m"
 
-        # Use yfinance_symbol from model if available, otherwise fallback to service mapping
-        yf_symbol = crypto.yfinance_symbol if crypto.yfinance_symbol else None
+        # Fetch history
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period_norm, interval=interval_norm)
 
-        # Fetch price history using yfinance service
-        price_data = YFinanceService.fetch_price_history(
-            symbol=symbol,
-            timeframe=timeframe,
-            yfinance_symbol=yf_symbol
-        )
+        if df.empty:
+            return {
+                "symbol": symbol.upper(),
+                "period": period_norm,
+                "interval": interval_norm,
+                "count": 0,
+                "data": [],
+                "error": f"No historical data found for symbol '{symbol}' with period '{period_norm}' and interval '{interval_norm}'",
+            }
 
-        return price_data
+        # Reset index to expose Date/Datetime as a column
+        df = df.reset_index()
 
-    except HttpError:
-        # Re-raise HTTP errors as-is
-        raise
-    except ValueError as e:
-        raise HttpError(400, str(e))
+        # Identify the timestamp column provided by yfinance
+        ts_col = "Datetime" if "Datetime" in df.columns else "Date" if "Date" in df.columns else None
+        if not ts_col:
+            return {
+                "symbol": symbol.upper(),
+                "period": period_norm,
+                "interval": interval_norm,
+                "count": 0,
+                "data": [],
+                "error": "No timestamp column found in yfinance response",
+            }
+
+        # Ensure timestamp is a datetime dtype (tz-naive)
+        ts = pd.to_datetime(df[ts_col], errors="coerce")
+        if ts.isna().all():
+            return {
+                "symbol": symbol.upper(),
+                "period": period_norm,
+                "interval": interval_norm,
+                "count": 0,
+                "data": [],
+                "error": "Failed to parse timestamps from yfinance response",
+            }
+        if getattr(ts.dt, "tz", None) is not None:
+            ts = ts.dt.tz_convert(None)
+
+        # Always provide 'date' (YYYY-MM-DD)
+        df["date"] = ts.dt.strftime("%Y-%m-%d")
+
+        # Provide 'datetime' only for intraday requests (1d/5d)
+        is_intraday = period_norm in ("1d", "5d")
+        if is_intraday:
+            # YYYY-MM-DD HH:MM (no seconds)
+            df["datetime"] = ts.dt.strftime("%Y-%m-%d %H:%M")
+
+        # Forward-fill Close if needed, then pick Close and Volume
+        if "Close" not in df.columns or "Volume" not in df.columns:
+            return {
+                "symbol": symbol.upper(),
+                "period": period_norm,
+                "interval": interval_norm,
+                "count": 0,
+                "data": [],
+                "error": "Expected columns 'Close' and/or 'Volume' not present in yfinance response",
+            }
+
+        df["Close"] = df["Close"].ffill()
+
+        # Build the clean payload
+        keep_cols = ["date", "Close", "Volume"]
+        if is_intraday:
+            keep_cols.insert(1, "datetime")  # ["date","datetime","Close","Volume"]
+
+        df_clean = df[keep_cols].copy()
+        df_clean.rename(columns={"Close": "close", "Volume": "volume"}, inplace=True)
+
+        # Convert to native Python types safe for JSON
+        data = df_clean.to_dict(orient="records")
+
+        return {
+            "symbol": symbol.upper(),
+            "period": period_norm,
+            "interval": interval_norm,
+            "count": len(data),
+            "data": data,
+        }
+
     except Exception as e:
-        raise HttpError(502, f"Upstream price service unavailable: {str(e)}")
+        # Log for server visibility and return a clean error payload
+        print(f"Error fetching price data for {symbol} ({period}/{interval}): {e}")
+        return {
+            "symbol": symbol.upper(),
+            "period": period,
+            "interval": interval,
+            "error": "Failed to fetch price data",
+            "details": str(e),
+            "data": [],
+        }
