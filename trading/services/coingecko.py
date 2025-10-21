@@ -1,3 +1,38 @@
+"""
+CoinGecko API integration service for real-time cryptocurrency market data.
+
+This module provides a service layer for fetching current prices, historical data,
+and asset metadata from the CoinGecko API. Supports both free and pro API tiers
+with automatic API key injection from Django settings.
+
+External API:
+    CoinGecko API v3 (https://www.coingecko.com/en/api)
+
+Rate Limits:
+    - Free tier: 10-50 calls/minute (varies by endpoint)
+    - Pro tier: Up to 500 calls/minute with API key
+    - Rate limit headers: X-RateLimit-Limit, X-RateLimit-Remaining
+    - Exceeded: Returns HTTP 429 Too Many Requests
+
+Error Handling:
+    - Network timeouts: 10-15 second timeouts on requests
+    - HTTP errors: Logged and return empty dict/list (graceful degradation)
+    - Invalid responses: Logged and return empty dict/list
+    - No retry logic: Single-attempt requests (TODO: Add exponential backoff)
+
+Caching:
+    - No built-in caching (TODO: Add Redis caching for price data)
+    - Recommended: Cache prices for 30-60 seconds to reduce API calls
+
+Data Precision:
+    - All prices converted to Decimal for accuracy
+    - Timestamps converted to timezone-aware datetime (UTC)
+
+Dependencies:
+    - requests: HTTP client
+    - django.conf.settings: API key and base URL configuration
+    - django.utils.timezone: Timezone-aware datetime handling
+"""
 import requests
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -6,13 +41,37 @@ from django.conf import settings
 from typing import Dict, List, Optional
 import logging
 
-# Create your services here.
-
 logger = logging.getLogger(__name__)
 
 
 class CoinGeckoService:
-    """Service for interacting with CoinGecko API"""
+    """
+    CoinGecko API client for cryptocurrency market data.
+
+    Provides methods for fetching current prices, historical price data, and coin
+    metadata from the CoinGecko API. Supports optional API key authentication for
+    pro tier rate limits.
+
+    Attributes:
+        BASE_URL (str): CoinGecko API base URL from settings
+        SUPPORTED_CRYPTOS (dict): Symbol to CoinGecko ID mapping
+        session (requests.Session): HTTP session with optional API key header
+
+    Rate Limits:
+        - Free tier: ~10-50 calls/minute
+        - Pro tier: Up to 500 calls/minute (with API key)
+        - No automatic rate limiting (TODO: Add throttling)
+
+    Methods:
+        get_current_prices(): Fetch latest prices for all supported cryptocurrencies
+        get_historical_prices(coingecko_id, days): Fetch historical price data
+        get_coin_info(coingecko_id): Fetch coin metadata (name, symbol, icon)
+
+    Error Handling:
+        - Returns empty dict/list on failures for graceful degradation
+        - Logs all errors for debugging
+        - No retries (single-attempt requests)
+    """
     
     BASE_URL = settings.COINGECKO_API_URL
     
@@ -33,10 +92,46 @@ class CoinGeckoService:
     
     def get_current_prices(self) -> Dict[str, Dict]:
         """
-        Fetch current prices for all supported cryptocurrencies
-        
+        Fetch current market data for all supported cryptocurrencies.
+
+        Makes a single batch request to CoinGecko's /simple/price endpoint to fetch
+        current prices, 24h change, volume, and market cap for all cryptos in
+        SUPPORTED_CRYPTOS.
+
+        API Endpoint:
+            GET /api/v3/simple/price
+
+        Rate Limit Impact:
+            Counts as 1 API call (batch request for multiple coins)
+
         Returns:
-            Dict with symbol as key and price data as value
+            Dict[str, Dict]: Symbol-keyed dictionary with market data:
+                {
+                    'BTC': {
+                        'price': Decimal,           # Current USD price
+                        'change_24h': Decimal,      # 24h percentage change
+                        'volume_24h': Decimal,      # 24h trading volume USD
+                        'market_cap': Decimal       # Market capitalization USD
+                    },
+                    ...
+                }
+            Empty dict on error (graceful degradation)
+
+        Error Handling:
+            - Network timeout (10s): Returns {}
+            - HTTP 429 (rate limit): Returns {} and logs error
+            - Invalid JSON: Returns {} and logs error
+            - Missing coins in response: Skipped (partial data returned)
+
+        Side Effects:
+            - Logs errors to logger.error() on failures
+            - No database writes
+            - No caching (TODO)
+
+        Notes:
+            - Converts all numeric values to Decimal for precision
+            - Missing fields default to 0 (e.g., change_24h, volume_24h)
+            - Requires CoinGecko IDs in SUPPORTED_CRYPTOS mapping
         """
         try:
             ids = ','.join(self.SUPPORTED_CRYPTOS.values())
@@ -72,19 +167,57 @@ class CoinGeckoService:
             return {}
     
     def get_historical_prices(
-        self, 
-        coingecko_id: str, 
+        self,
+        coingecko_id: str,
         days: int
     ) -> List[Dict]:
         """
-        Fetch historical prices for a cryptocurrency
-        
+        Fetch historical price data for a single cryptocurrency.
+
+        Retrieves time-series price data from CoinGecko's market_chart endpoint
+        with automatic interval selection based on requested timeframe.
+
+        API Endpoint:
+            GET /api/v3/coins/{id}/market_chart
+
         Args:
-            coingecko_id: CoinGecko ID (e.g., 'bitcoin')
-            days: Number of days of history
-            
+            coingecko_id (str): CoinGecko asset identifier (e.g., 'bitcoin', 'ethereum')
+            days (int): Number of days of historical data to fetch
+
+        Interval Selection:
+            - days > 90: Daily intervals
+            - days <= 90: Hourly intervals
+            (Automatic granularity based on timeframe)
+
+        Rate Limit Impact:
+            Counts as 1 API call per invocation
+
         Returns:
-            List of {'timestamp': datetime, 'price': Decimal}
+            List[Dict]: Chronological list of price points:
+                [
+                    {
+                        'timestamp': datetime (timezone-aware UTC),
+                        'price': Decimal (USD)
+                    },
+                    ...
+                ]
+            Empty list on error (graceful degradation)
+
+        Error Handling:
+            - Network timeout (15s): Returns []
+            - HTTP 404 (invalid coingecko_id): Returns [] and logs error
+            - HTTP 429 (rate limit): Returns [] and logs error
+            - Invalid data format: Returns [] and logs error
+
+        Side Effects:
+            - Logs errors to logger.error() on failures
+            - No database writes
+            - No caching (TODO)
+
+        Notes:
+            - Timestamps converted from UNIX ms to timezone-aware datetime (UTC)
+            - All prices converted to Decimal for precision
+            - Typically used for populating PriceHistory model
         """
         try:
             url = f"{self.BASE_URL}/coins/{coingecko_id}/market_chart"

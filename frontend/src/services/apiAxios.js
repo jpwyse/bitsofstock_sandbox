@@ -1,5 +1,158 @@
-// API service using Axios for communicating with Django backend
-
+/**
+ * Axios API Service - Django Backend Communication Layer
+ *
+ * Centralized HTTP client for all API requests to Django backend using Axios.
+ * Provides automatic error handling, request/response transformation, timeout
+ * management, and cancel token support. All frontend components should use this
+ * service instead of direct fetch() or axios calls.
+ *
+ * **Architecture:**
+ * - Base URL: /api/trading (proxied to Django backend)
+ * - Timeout: 10 seconds default (configurable per request)
+ * - Content-Type: application/json (automatic serialization/deserialization)
+ * - Interceptors: Request (auth prep), Response (error extraction)
+ * - Cancel Support: AbortSignal and CancelToken for racing requests
+ *
+ * **Interceptors:**
+ * 1. Request Interceptor:
+ *    - Future: Add authentication tokens (config.headers.Authorization)
+ *    - Currently: Pass-through (no auth in sandbox)
+ * 2. Response Interceptor:
+ *    - Success: Auto-unwraps response.data (returns payload directly)
+ *    - 204 No Content: Returns null instead of empty response
+ *    - Errors: Extracts backend error messages from payload.detail/message/error
+ *    - Network: Translates ECONNABORTED → "Request timeout", ERR_NETWORK → "Network error"
+ *    - Cancel: Re-throws axios.isCancel errors for cleanup
+ *
+ * **Error Handling:**
+ * - Backend errors: Extracts Django error messages (detail, message, error fields)
+ * - Timeout errors: "Request timeout - server took too long to respond"
+ * - Network errors: "Network error - please check your connection"
+ * - Cancel errors: Re-thrown as-is for component cleanup
+ * - Generic errors: Fallback to error.message or "An unexpected error occurred"
+ * - All errors thrown as Error objects (components use try/catch)
+ *
+ * **Request Cancellation:**
+ * - AbortSignal: Modern approach (pass { signal } option to methods)
+ * - CancelToken: Legacy approach (use createCancelToken() for older axios)
+ * - Use cases:
+ *   • Component unmount (cleanup pending requests)
+ *   • Tab switching (cancel stale chart data fetches)
+ *   • Search debouncing (cancel previous searches)
+ *
+ * **API Methods (Organized by Category):**
+ *
+ * Portfolio:
+ * - getPortfolioSummary() → GET /portfolio/summary
+ * - getPortfolioHistory(timeframe) → GET /portfolio/history?timeframe={1D,5D,1M,3M,6M,YTD}
+ *
+ * Holdings:
+ * - getHoldings() → GET /holdings
+ *
+ * Cryptocurrencies:
+ * - getCryptocurrencies() → GET /cryptocurrencies
+ * - getCryptocurrencyDetail(cryptoId) → GET /cryptocurrencies/{id}
+ *
+ * Trading:
+ * - executeBuy(cryptoId, amountUsd?, quantity?) → POST /trades/buy
+ * - executeSell(cryptoId, amountUsd?, quantity?) → POST /trades/sell
+ *
+ * Transactions:
+ * - getTransactions(page, type) → GET /transactions?page={page}&type={ALL|BUY|SELL}
+ *
+ * News:
+ * - getCryptoNews(limit) → GET /news/crypto?limit={limit}
+ *
+ * Market Data:
+ * - getPriceHistory(symbol, period, {signal}) → GET /price_history (yfinance)
+ *   • Used by ViewChartModal for historical charts
+ *   • symbol: BTC-USD, ETH-USD format (yfinance tickers)
+ *   • period: 1d, 5d, 1mo, 3mo, 6mo, ytd, 1y, 5y, max
+ * - getPriceHistoryTest(symbol, period, interval, {signal}) → GET /price_test
+ *   • Test endpoint for development
+ * - getCryptoPriceHistory(symbol, timeframe, {signal}) → GET /market/crypto/history
+ *   • Alternative market endpoint (may be deprecated)
+ *
+ * User:
+ * - getUserAccount() → GET /user/account
+ *
+ * **Usage Patterns:**
+ *
+ * Basic request:
+ * ```javascript
+ * import apiService from '../services/apiAxios';
+ *
+ * const data = await apiService.getCryptocurrencies();
+ * // Returns array directly (response.data auto-unwrapped)
+ * ```
+ *
+ * With error handling:
+ * ```javascript
+ * try {
+ *   const portfolio = await apiService.getPortfolioSummary();
+ * } catch (error) {
+ *   // error.message contains user-friendly backend error or network error
+ *   console.error('Failed to load portfolio:', error.message);
+ * }
+ * ```
+ *
+ * With cancellation (AbortController):
+ * ```javascript
+ * const abortController = new AbortController();
+ * const history = await apiService.getPriceHistory('BTC-USD', '1y', {
+ *   signal: abortController.signal
+ * });
+ * // Later: abortController.abort();
+ * ```
+ *
+ * With cancellation (CancelToken - legacy):
+ * ```javascript
+ * const source = apiService.createCancelToken();
+ * const history = await apiService.getPriceHistory('BTC-USD', '1y', {
+ *   cancelToken: source.token
+ * });
+ * // Later: source.cancel('Operation canceled by user');
+ * ```
+ *
+ * **Backend Integration:**
+ * - Django Ninja REST API (trading/api.py)
+ * - All endpoints documented in backend: trading/api.py (see Google-style docstrings)
+ * - Schemas defined in: trading/schemas.py (Pydantic validation)
+ * - Base URL configured in Vercel/Heroku proxy or dev server proxy
+ *
+ * **Development vs Production:**
+ * - Development: Proxied via React dev server (package.json: "proxy": "http://localhost:8000")
+ * - Production (Heroku): Both frontend and backend deployed together, /api routes to Django
+ * - No CORS issues (same-origin or CORS configured in backend/settings.py)
+ *
+ * **Response Transformation:**
+ * - All methods return Promise<data> (auto-unwrapped from axios response)
+ * - 204 No Content → null
+ * - Empty arrays/objects → [] or {} (not null)
+ * - Error responses → throw Error with backend message
+ *
+ * **Timeout Behavior:**
+ * - Default: 10 seconds (DEFAULT_TIMEOUT_MS)
+ * - Triggers ECONNABORTED error → "Request timeout" message
+ * - Override per request: apiClient.get(url, { timeout: 30000 })
+ * - Use cases for longer timeouts:
+ *   • Large price history fetches (5Y, MAX periods)
+ *   • Slow yfinance API responses
+ *
+ * **Related Files:**
+ * - trading/api.py: Backend endpoint implementations
+ * - trading/schemas.py: Request/response schemas
+ * - PortfolioContext.js: Uses executeBuy/executeSell for trades
+ * - useCryptoNews.js: Uses getCryptoNews for news feed
+ * - ViewChartModal.jsx: Uses getPriceHistory for price charts
+ *
+ * **Testing:**
+ * - Mock apiService in component tests (jest.mock('../services/apiAxios'))
+ * - Example: TradeModal.test.js mocks executeBuy/executeSell
+ *
+ * @module apiAxios
+ * @see {@link https://axios-http.com/docs/intro|Axios Documentation}
+ */
 import axios from 'axios';
 
 const API_BASE_URL = '/api/trading';

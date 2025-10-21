@@ -1,3 +1,39 @@
+"""
+Finnhub API integration service for cryptocurrency news articles.
+
+This module provides a service layer for fetching the latest cryptocurrency news
+from the Finnhub API. Includes automatic retry logic, HTML sanitization, and
+article normalization.
+
+External API:
+    Finnhub Stock API v1 (https://finnhub.io/docs/api)
+
+Rate Limits:
+    - Free tier: 60 calls/minute, 30 calls/second
+    - Premium tier: Higher limits with API key
+    - Rate limit headers: X-Ratelimit-Limit, X-Ratelimit-Remaining, X-Ratelimit-Reset
+    - Exceeded: Returns HTTP 429 Too Many Requests
+
+Error Handling:
+    - Network timeouts: 10 second timeout on requests
+    - HTTP errors: Automatic retry with exponential backoff (max 1 retry)
+    - Invalid responses: Logged and skipped (partial data returned)
+    - Missing required fields: Articles skipped with warning log
+
+Retry Logic:
+    - Max retries: 1 (2 total attempts)
+    - Backoff strategy: Exponential (2^attempt seconds)
+    - Retryable errors: All requests.exceptions.RequestException
+
+Data Sanitization:
+    - HTML tags stripped from summary field
+    - HTML entities decoded (e.g., &nbsp; → space)
+    - Extra whitespace normalized
+
+Dependencies:
+    - requests: HTTP client
+    - django.conf.settings: API key configuration
+"""
 import requests
 import time
 import re
@@ -9,7 +45,29 @@ logger = logging.getLogger(__name__)
 
 
 class FinnhubService:
-    """Service for interacting with Finnhub API"""
+    """
+    Finnhub API client for cryptocurrency news.
+
+    Provides methods for fetching and normalizing cryptocurrency news articles
+    from the Finnhub API with automatic retry logic and HTML sanitization.
+
+    Attributes:
+        BASE_URL (str): Finnhub API base URL
+        api_key (str): API key from Django settings
+        session (requests.Session): HTTP session for connection pooling
+
+    Rate Limits:
+        - Free tier: 60 calls/minute, 30 calls/second
+        - Counts against account-wide rate limit
+
+    Methods:
+        get_crypto_news(limit, min_id): Fetch latest crypto news articles
+
+    Error Handling:
+        - Retries failed requests once with exponential backoff
+        - Skips invalid articles (missing required fields)
+        - Logs all errors and warnings
+    """
 
     BASE_URL = "https://finnhub.io/api/v1"
 
@@ -19,14 +77,61 @@ class FinnhubService:
 
     def get_crypto_news(self, limit: int = 20, min_id: Optional[int] = None) -> List[Dict]:
         """
-        Fetch cryptocurrency news from Finnhub
+        Fetch latest cryptocurrency news articles from Finnhub.
+
+        Retrieves crypto news from Finnhub's /news endpoint, filters, sorts, and
+        normalizes the data for client consumption. Includes automatic retry logic
+        and HTML sanitization.
+
+        API Endpoint:
+            GET /api/v1/news?category=crypto
 
         Args:
-            limit: Number of articles to return (default 20)
-            min_id: Optional minimum ID for incremental loads
+            limit (int): Maximum number of articles to return (default 20)
+            min_id (int, optional): Minimum article ID for incremental updates.
+                                    Articles with ID <= min_id are filtered out.
+
+        Rate Limit Impact:
+            Counts as 1 API call per invocation
 
         Returns:
-            List of normalized news articles
+            List[Dict]: Sorted list of normalized articles (newest first):
+                [
+                    {
+                        'id': int,                # Unique article identifier
+                        'datetime': int,          # UNIX timestamp (seconds)
+                        'headline': str,          # Article title
+                        'image': str,             # Image URL (may be empty)
+                        'summary': str,           # Sanitized article summary (HTML stripped)
+                        'url': str,               # Article URL
+                        'source': str             # News source (may be empty)
+                    },
+                    ...
+                ]
+
+        Error Handling:
+            - HTTP errors: Retried once, then re-raised
+            - Invalid articles (missing required fields): Skipped with warning log
+            - Network timeout (10s): Retried once, then raised
+            - Empty response: Returns []
+
+        Side Effects:
+            - Logs warnings for invalid articles
+            - Logs errors for request failures
+            - Re-raises exceptions on final failure (after retries)
+
+        Sorting:
+            Articles sorted by datetime descending (newest first)
+
+        Sanitization:
+            - HTML tags removed from summary
+            - HTML entities decoded
+            - Whitespace normalized
+
+        Notes:
+            - Used by /news/crypto API endpoint
+            - Frontend caches results for 24 hours (localStorage)
+            - Articles may be duplicated across requests (use min_id for deduplication)
         """
         try:
             url = f"{self.BASE_URL}/news"

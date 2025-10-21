@@ -1,3 +1,154 @@
+/**
+ * Trade Modal Component - Buy/Sell Cryptocurrency Trading Interface
+ *
+ * Comprehensive trading modal with cryptocurrency selection, buy/sell toggle, dual input
+ * modes (USD amount or quantity), auto-calculation, validation, and real-time feedback.
+ * Integrates with PortfolioContext for trade execution and portfolio updates.
+ *
+ * Features:
+ * - Trade Type Toggle: Buy (primary color) vs Sell (error/red color)
+ * - Cryptocurrency Selection: Autocomplete search with symbol/name filtering
+ * - Dual Input Modes:
+ *   • USD Amount: Enter dollar amount, quantity auto-calculated
+ *   • Quantity: Enter crypto quantity, USD amount auto-calculated
+ * - Real-time Calculation: Updates opposite field based on current price
+ * - Validation:
+ *   • Cryptocurrency must be selected
+ *   • Either USD amount OR quantity required (not both zero, not both empty)
+ *   • Numeric validation (no negative, no invalid characters)
+ *   • Buy: Cash balance check (backend validates sufficient funds)
+ *   • Sell: Holdings check (backend validates sufficient quantity)
+ * - Success/Error States: Alert banners with auto-close on success (1.5s delay)
+ * - Loading States: Spinner for crypto list fetch and trade submission
+ *
+ * Props:
+ * @param {boolean} open - Controls modal visibility (Dialog open state)
+ * @param {function} onClose - Callback to close modal (triggered on cancel or success)
+ *
+ * State Management:
+ * - cryptocurrencies: Array of available cryptos from /api/cryptocurrencies
+ * - selectedCrypto: Currently selected cryptocurrency object (from autocomplete)
+ * - loadingCryptos: Loading state for cryptocurrency list fetch
+ * - tradeType: 'buy' or 'sell' (ToggleButtonGroup)
+ * - inputMode: 'usd' or 'quantity' (determines which field drives calculation)
+ * - usdAmount: USD dollar amount string (validated regex: /^\d*\.?\d*$/)
+ * - quantity: Crypto quantity string (validated regex: /^\d*\.?\d*$/)
+ * - loading: Trade submission loading state
+ * - error: Error message string (displayed in Alert)
+ * - success: Success boolean (triggers success Alert and auto-close)
+ *
+ * Auto-Calculation Logic:
+ * - inputMode='usd' + usdAmount changed → quantity = usdAmount / current_price
+ * - inputMode='quantity' + quantity changed → usdAmount = quantity * current_price
+ * - Recalculates when selectedCrypto changes (price update)
+ * - Updates toString() for display (no rounding, shows full precision)
+ *
+ * Data Sources:
+ * - /api/cryptocurrencies: List of available cryptos (fetched on modal open)
+ * - PortfolioContext:
+ *   • executeBuy(crypto_id, usd_amount, quantity) → Calls /api/trades/buy
+ *   • executeSell(crypto_id, usd_amount, quantity) → Calls /api/trades/sell
+ *   • portfolio.cash_balance: Displayed in USD amount helper text
+ *
+ * Form Reset Behavior:
+ * - On modal open (useEffect[open]):
+ *   • Clears selectedCrypto, usdAmount, quantity
+ *   • Resets error, success states
+ *   • Sets tradeType='buy', inputMode='usd'
+ * - Preserves state during submission (only resets on success or modal re-open)
+ *
+ * Validation Rules:
+ * - Cryptocurrency required: Error "Please select a cryptocurrency"
+ * - Amount/quantity required: Error "Please enter an amount or quantity"
+ * - Numeric input only: Regex /^\d*\.?\d*$/ (digits, optional single decimal point)
+ * - Positive values: Submit disabled if <= 0
+ * - Backend validates:
+ *   • Buy: Sufficient cash_balance >= amount_usd
+ *   • Sell: Sufficient holdings quantity >= quantity
+ *
+ * Submit Button States:
+ * - Disabled when:
+ *   • loading=true (trade in progress)
+ *   • !selectedCrypto (no crypto selected)
+ *   • !usdAmount && !quantity (both empty)
+ *   • NaN or <= 0 (invalid numeric value)
+ * - Button text:
+ *   • No crypto selected: "Select Cryptocurrency"
+ *   • Crypto selected: "Buy {SYMBOL}" or "Sell {SYMBOL}"
+ *   • Loading: CircularProgress spinner
+ * - Button color: Primary (buy) or Error/red (sell)
+ *
+ * Success Flow:
+ * - executeBuy/executeSell returns { success: true, transaction, updated_portfolio }
+ * - setSuccess(true) → Success Alert displayed
+ * - setTimeout(1500ms) → onClose() auto-closes modal
+ * - PortfolioContext auto-refreshes portfolio data (triggers global state update)
+ *
+ * Error Handling:
+ * - Crypto fetch error: Sets error state "Failed to load cryptocurrencies"
+ * - Trade error: Displays backend error message (e.g., "Insufficient funds")
+ * - Network error: Displays err.message or generic "An error occurred"
+ * - Alert dismissible via X button (onClose={() => setError(null)})
+ *
+ * Autocomplete Behavior:
+ * - Options: cryptocurrencies array (symbol, name, icon_url, current_price)
+ * - Search: Filters by symbol OR name (case-insensitive includes)
+ * - Display: "{SYMBOL} - {Name}" label
+ * - Dropdown options: Avatar icon + Symbol (bold) + Name (secondary color)
+ * - Loading state: Shows spinner while loadingCryptos=true
+ * - Disabled: While loading cryptos
+ *
+ * Input Mode Toggle:
+ * - USD Amount: Focuses USD input field, auto-calculates quantity
+ * - Quantity: Focuses quantity input field, auto-calculates USD amount
+ * - Disabled until cryptocurrency selected
+ * - Size: small (compact buttons)
+ * - Full width for visual consistency
+ *
+ * Display Elements:
+ * - Dialog Title:
+ *   • Selected: Avatar + Name + Symbol + Current Price
+ *   • Unselected: Avatar placeholder "T" + "Trade"
+ * - Helper Texts:
+ *   • USD Amount: "Available: ${cash_balance}"
+ *   • Autocomplete: "Select a cryptocurrency to trade" (if none selected)
+ * - Total Value Box: Shows quantity × current_price (only when quantity > 0)
+ *
+ * Color Semantics:
+ * - Buy: Primary color (blue/purple)
+ * - Sell: Error color (red)
+ * - Success: Green Alert
+ * - Error: Red Alert
+ *
+ * Responsive Design:
+ * - maxWidth="sm" (600px max width on desktop)
+ * - fullWidth on mobile
+ * - Dialog content scrollable if overflows
+ *
+ * Performance Considerations:
+ * - Cryptocurrency list fetched once per modal open (not on every render)
+ * - Auto-calculation debounced via inputMode tracking (prevents infinite loops)
+ * - Form state preserved during submission (no re-renders)
+ *
+ * Related Components:
+ * - PortfolioContext: Trade execution and portfolio refresh
+ * - apiService: API client for /api/cryptocurrencies
+ * - formatCurrency: USD formatting utility
+ *
+ * Backend Integration:
+ * - POST /api/trades/buy: BuyRequestSchema { cryptocurrency_id, amount_usd?, quantity? }
+ * - POST /api/trades/sell: SellRequestSchema { cryptocurrency_id, amount_usd?, quantity? }
+ * - See trading/api.py:execute_buy and trading/api.py:execute_sell
+ *
+ * @component
+ * @example
+ * // Used in Market.js CryptocurrencyList
+ * const [tradeModalOpen, setTradeModalOpen] = useState(false);
+ * <TradeModalAllCryptos
+ *   open={tradeModalOpen}
+ *   onClose={() => setTradeModalOpen(false)}
+ * />
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -17,7 +168,7 @@ import {
 } from '@mui/material';
 import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency } from '../utils/formatters';
-import apiService from '../services/api';
+import apiService from '../services/apiAxios';
 
 const TradeModalAllCryptos = ({ open, onClose }) => {
   const { executeBuy, executeSell, portfolio } = usePortfolio();

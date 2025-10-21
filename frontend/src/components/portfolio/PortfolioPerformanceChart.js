@@ -1,3 +1,104 @@
+/**
+ * Portfolio Performance Chart Component - Portfolio Value Over Time
+ *
+ * Displays portfolio performance with area chart showing portfolio value over selected timeframe.
+ * Features purple gradient fill, baseline reference line, summary statistic cards, and custom
+ * tooltip with gain/loss calculations.
+ *
+ * **Features:**
+ * - Timeframe Selection: 1D, 5D, 1M, 3M, 6M, YTD (max for portfolio-specific charts)
+ * - Summary Cards: Initial Investment, Current Value, Total Gain/Loss, Total Return %
+ * - Area Chart: Purple gradient fill with baseline reference line
+ * - Custom Tooltip: Total Value, Gain/Loss ($), Gain/Loss (%) with color coding
+ * - Loading/Error/Empty States: Skeleton, Alert, and empty state messages
+ *
+ * **Timeframe Limits:**
+ * - Portfolio charts capped at YTD (Year-To-Date) - no 1Y, 5Y, ALL
+ * - Reason: Portfolio inception date may not have long history
+ * - Asset-specific charts (ViewChartModal) support longer ranges (1Y, 5Y, ALL)
+ *
+ * **Data Source:**
+ * - Backend Endpoint: GET /api/trading/portfolio/history?timeframe={timeframe}
+ * - Returns: { data_points: [{timestamp, portfolio_value}], timeframe }
+ * - Pre-inception: Backend returns flat data at initial_investment
+ * - Post-inception: Backend calculates mark-to-market (cash + holdings value)
+ *
+ * **Chart Data Transformation:**
+ * - timestamp: Localized to viewer's timezone via new Date(point.timestamp)
+ * - displayDate: Short date format for X-axis (e.g., "Jan 15")
+ * - value: Portfolio value (parseFloat for Recharts)
+ * - gainLoss: value - baseline (positive or negative)
+ * - gainLossPercent: (gainLoss / baseline) * 100
+ * - baseline: initial_investment (fallback 10000 if null)
+ *
+ * **Baseline Reference Line:**
+ * - Horizontal dashed line at initial_investment
+ * - Label: "~$10,000" (formatted currency)
+ * - Purpose: Visual reference for break-even point
+ * - Color: Gray (#666) with 5-5 dash pattern
+ *
+ * **Purple Gradient Fill:**
+ * - Linear gradient: #5B4FDB (primary purple) → #7C3AED → #A78BFA (light purple)
+ * - Matches project theme (purple/violet color scheme)
+ * - Opacity: 0.85 (top) → 0.4 (middle) → 0.1 (bottom)
+ * - Gradient ID: colorPortfolio (defined in <defs>)
+ *
+ * **Summary Cards (4 cards):**
+ * 1. Initial Investment: portfolio.initial_investment (baseline)
+ * 2. Current Value: portfolio.total_portfolio_value
+ * 3. Total Gain/Loss: portfolio.total_gain_loss with +/- prefix and color (green/red)
+ * 4. Total Return: portfolio.total_gain_loss_percentage% with +/- prefix and color
+ *
+ * **Custom Tooltip:**
+ * - Shows on hover over chart area
+ * - Timestamp: Localized date/time (e.g., "1/15/2025, 2:30:00 PM")
+ * - Total Value: Formatted currency (e.g., "$10,234.56")
+ * - Gain/Loss: Formatted currency with +/- prefix and color coding
+ * - Gain/Loss %: Percentage with 2 decimal places and color coding
+ * - Color coding: Green (success.main) for gain, red (error.main) for loss
+ *
+ * **Loading State:**
+ * - CircularProgress spinner centered
+ * - Message: "Loading performance data..."
+ * - Triggered: On mount or timeframe change
+ *
+ * **Error State:**
+ * - Alert component with severity="error"
+ * - Message: "Failed to load performance data. Please try again."
+ * - No auto-retry (user must change timeframe or reload page)
+ *
+ * **Empty State:**
+ * - Displays when no data_points returned from backend
+ * - Message: "No performance data available" + "Start trading to see your portfolio performance over time"
+ * - Centered text layout
+ *
+ * **Performance Considerations:**
+ * - Recharts uses virtualization for large datasets
+ * - data_points typically small (<500 points per timeframe)
+ * - isAnimationActive={true} for smooth chart transitions
+ * - Re-fetches on timeframe change (useEffect dependency)
+ *
+ * **Responsive Design:**
+ * - ResponsiveContainer: 100% width, 400px height
+ * - Grid layout: 4 cards at md+ (3 columns each), stacked on mobile
+ * - Timeframe toggle: Flexbox with flexGrow to push to far right
+ *
+ * **Backend Integration:**
+ * - Endpoint: GET /api/trading/portfolio/history
+ * - Implementation: trading/api.py:get_portfolio_history()
+ * - Business logic: trading/services.py:get_portfolio_history_data()
+ * - See backend docstrings for pre/post-inception logic
+ *
+ * **Related Components:**
+ * - Portfolio.js: Parent page with tab containing this chart
+ * - PortfolioAllocationChart.js: Sibling component (Allocation tab)
+ * - usePortfolio hook: Provides portfolio summary data
+ *
+ * @component
+ * @example
+ * // Rendered within Portfolio.js Performance tab
+ * {currentTab === 2 && <PortfolioPerformanceChart />}
+ */
 import { useState, useEffect } from 'react';
 import {
   Box,
@@ -21,21 +122,8 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { usePortfolio } from '../../context/PortfolioContext';
-import api from '../../services/api';
+import api from '../../services/apiAxios';
 import { formatCurrency, formatShortDate } from '../../utils/formatters';
-
-/**
- * Portfolio Performance Chart Component
- *
- * Displays portfolio value over time with green/red fill split based on initial_investment baseline.
- *
- * Features:
- * - Timeframe selection: 1D, 5D, 1M, 3M, 6M, YTD (max for portfolio)
- * - Pre-inception: flat at initial_investment
- * - Post-inception: mark-to-market (cash + holdings)
- * - Custom tooltip: Total Value, Gain/Loss, Gain/Loss %
- * - Localized timestamps
- */
 const PortfolioPerformanceChart = () => {
   const { portfolio } = usePortfolio();
   const [timeframe, setTimeframe] = useState('YTD');

@@ -22,7 +22,7 @@ import {
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import api from '../../services/api';
+import api from '../../services/apiAxios';
 import { formatCurrency, formatCurrencyWithSign, formatCryptoQuantity, formatDate } from '../../utils/formatters';
 
 const RealizedGainsTable = () => {

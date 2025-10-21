@@ -1,3 +1,112 @@
+/**
+ * Portfolio Allocation Chart Component - Asset Distribution Pie Chart
+ *
+ * Displays portfolio holdings as interactive pie chart with percentage labels, color-coded
+ * segments, summary statistics cards, and asset breakdown legend. Shows visual distribution
+ * of portfolio value across different cryptocurrencies.
+ *
+ * **Features:**
+ * - Pie Chart: Holdings value distribution with percentage labels (>3% shown)
+ * - Summary Cards: Total Holdings Value, Number of Assets, Largest Holding
+ * - Asset Legend: Color-coded breakdown with value and percentage for each asset
+ * - Custom Tooltip: Full name, symbol, value, percentage, quantity on hover
+ * - Empty State: Message when no holdings exist
+ *
+ * **Color Scheme:**
+ * - 10 purple/violet shades matching project theme
+ * - Colors cycle if more than 10 holdings (uses modulo)
+ * - Primary: #5B4FDB, #7C3AED, #A78BFA, #C084FC, #8B5CF6, etc.
+ * - Consistent with PortfolioPerformanceChart gradient
+ *
+ * **Chart Data Transformation:**
+ * - Source: holdings array from PortfolioContext
+ * - Transform: Map each holding to { name, fullName, value, quantity, percentage }
+ * - name: cryptocurrency.symbol (e.g., "BTC")
+ * - fullName: cryptocurrency.name (e.g., "Bitcoin")
+ * - value: parseFloat(holding.current_value)
+ * - quantity: parseFloat(holding.quantity) with 8 decimal precision
+ * - percentage: (current_value / total_portfolio_value) * 100
+ *
+ * **Percentage Label Rendering:**
+ * - Only shows label if segment > 3% (percent >= 0.03)
+ * - Prevents label overlap for small holdings
+ * - Positioned at midpoint of segment radius
+ * - White text (#FFFFFF) with bold font (fontWeight 600)
+ * - Format: "12.3%" (1 decimal place)
+ *
+ * **Summary Cards (3 cards):**
+ * 1. Total Holdings Value: portfolio.total_holdings_value (formatted currency)
+ * 2. Number of Assets: holdings.length (integer count)
+ * 3. Largest Holding: symbol + percentage (e.g., "BTC (+45.2%)")
+ *    • Calculated: Max value from chartData array
+ *    • Uses reduce() to find holding with highest value
+ *
+ * **Asset Breakdown Legend:**
+ * - Positioned above chart (mb: -5 for overlap reduction)
+ * - Flexbox layout with wrap, centered, gap: 0, minWidth: 200px per item
+ * - Color square (16x16px) + text info for each asset
+ * - Text lines:
+ *   1. Full name + symbol (e.g., "Bitcoin (BTC)")
+ *   2. Value + percentage (e.g., "$4,523.45 • +45.2%")
+ * - Color square matches pie segment color (COLORS[index % COLORS.length])
+ *
+ * **Custom Tooltip:**
+ * - Displays on hover over pie segments
+ * - Full name + symbol (e.g., "Bitcoin (BTC)")
+ * - Value: Formatted currency
+ * - Percentage: formatPercentage(percentage / 100) - adjusts for decimal input
+ * - Quantity: Fixed 8 decimal places (standard crypto precision)
+ * - Paper background with semi-transparent white (0.95 opacity)
+ *
+ * **Empty State:**
+ * - Displays when holdings array is empty or null
+ * - Message: "No holdings to display. Start trading to see your allocation!"
+ * - Centered layout with py: 6 spacing
+ *
+ * **Chart Sizing:**
+ * - ResponsiveContainer: 100% width, 700px height (large chart for readability)
+ * - Pie outerRadius: 70% (leaves margin for labels)
+ * - Center: 50% x, 50% y (perfect centering)
+ * - labelLine: false (no lines connecting labels to segments)
+ *
+ * **Performance Considerations:**
+ * - chartData calculated on every render (small array, fast)
+ * - largestHolding calculated via reduce (O(n) but n is small)
+ * - Recharts uses virtualization (no performance issues with <100 holdings)
+ * - No auto-refresh (data comes from PortfolioContext WebSocket updates)
+ *
+ * **Responsive Design:**
+ * - Grid: 3 cards at md+ (4 columns each), stacked on mobile (xs: 12)
+ * - Asset legend: Wraps on small screens (flexWrap: 'wrap')
+ * - Chart height fixed at 700px (may overflow on small devices)
+ *
+ * **Data Source:**
+ * - holdings: From PortfolioContext (fetched on mount, updated on trades/WebSocket)
+ * - portfolio: From PortfolioContext (for total_holdings_value and total_portfolio_value)
+ * - No direct API calls (data already in context)
+ *
+ * **Backend Integration:**
+ * - Holdings data: GET /api/trading/holdings
+ * - Portfolio summary: GET /api/trading/portfolio/summary
+ * - Both fetched by PortfolioContext on mount
+ *
+ * **Related Components:**
+ * - Portfolio.js: Parent page with Allocation tab containing this chart
+ * - PortfolioPerformanceChart.js: Sibling component (Performance tab)
+ * - usePortfolio hook: Provides holdings and portfolio data
+ *
+ * **Edge Cases:**
+ * - No holdings: Shows empty state
+ * - Single holding: Shows 100% pie chart
+ * - Many holdings (>10): Colors cycle via modulo
+ * - Small holdings (<3%): No label shown on pie segment
+ * - Zero portfolio value: percentage = 0 (division by zero prevented)
+ *
+ * @component
+ * @example
+ * // Rendered within Portfolio.js Allocation tab
+ * {currentTab === 1 && <PortfolioAllocationChart />}
+ */
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Box, Typography, Paper, Grid, Card, CardContent } from '@mui/material';
 import { usePortfolio } from '../../context/PortfolioContext';
