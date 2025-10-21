@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Container,
@@ -12,11 +12,11 @@ import {
 } from '@mui/material';
 import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency, formatPercentage } from '../utils/formatters';
-import HoldingsList from '../components/HoldingsList';
-import PortfolioAllocationChart from '../components/PortfolioAllocationChart';
-import PortfolioPerformanceChart from '../components/PortfolioPerformanceChart';
-import RealizedGainsTable from '../components/RealizedGainsTable';
-import TransactionsList from '../components/TransactionsList';
+import HoldingsList from '../components/portfolio/HoldingsList';
+import PortfolioAllocationChart from '../components/portfolio/PortfolioAllocationChart';
+import PortfolioPerformanceChart from '../components/portfolio/PortfolioPerformanceChart';
+import RealizedGainsTable from '../components/portfolio/RealizedGainsTable';
+import TransactionsList from '../components/portfolio/TransactionsList';
 
 const Portfolio = () => {
   const { portfolio, loading } = usePortfolio();
@@ -35,7 +35,7 @@ const Portfolio = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4, pb: 6 }}>
       {/* Portfolio Summary */}
       <Box mb={4}>
         <Typography variant="h3" gutterBottom fontWeight={700}>
@@ -105,7 +105,6 @@ const Portfolio = () => {
           <Tab label="Performance" />
           <Tab label="Gains/Losses" />
           <Tab label="Transactions" />
-          <Tab label="Volatility" />
         </Tabs>
 
         {currentTab === 0 && <HoldingsList />}
@@ -113,7 +112,6 @@ const Portfolio = () => {
         {currentTab === 2 && <PortfolioPerformanceChart />}
         {currentTab === 3 && <RealizedGainsTable />}
         {currentTab === 4 && <TransactionsList />}
-        {currentTab === 5 && <Box>Volatility content coming soon</Box>}
       </Box>
     </Container>
   );

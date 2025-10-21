@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -22,8 +22,8 @@ import {
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import api from '../services/api';
-import { formatCurrency, formatCurrencyWithSign, formatCryptoQuantity, formatDate } from '../utils/formatters';
+import api from '../../services/api';
+import { formatCurrency, formatCurrencyWithSign, formatCryptoQuantity, formatDate } from '../../utils/formatters';
 
 const RealizedGainsTable = () => {
   const [transactions, setTransactions] = useState([]);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Container,
@@ -6,20 +6,17 @@ import {
   Card,
   CardContent,
   Typography,
-  Tabs,
-  Tab,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency, formatPercentage } from '../utils/formatters';
+import CryptoNewsList from '../components/news/CryptoNewsList';
 
-const Dashboard = () => {
+const News = () => {
   const { portfolio, loading } = usePortfolio();
-  const [currentTab, setCurrentTab] = useState(0);
-
-  const handleTabChange = (event, newValue) => {
-    setCurrentTab(newValue);
-  };
+  const [newsRefetch, setNewsRefetch] = useState(null);
 
   if (loading) {
     return (
@@ -30,9 +27,16 @@ const Dashboard = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Portfolio Summary */}
-      <Box mb={4}>
+    <Container maxWidth="xl" sx={{ py: 4, pb: 6 }}>
+      {/* Portfolio Summary - Centered with 80% Width to match News section */}
+      <Box
+        mb={4}
+        sx={{
+          maxWidth: '80%',
+          mx: 'auto',
+          px: 2
+        }}
+      >
         <Typography variant="h3" gutterBottom fontWeight={700}>
           Portfolio Snapshot
         </Typography>
@@ -92,26 +96,40 @@ const Dashboard = () => {
         </Grid>
       </Box>
 
-      {/* Tabs for Dashboard Views */}
-      <Box>
-        <Tabs value={currentTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-          <Tab label="Holdings" />
-          <Tab label="Allocation" />
-          <Tab label="Performance" />
-          <Tab label="Gains/Losses" />
-          <Tab label="Transactions" />
-          <Tab label="Volatility" />
-        </Tabs>
+      {/* Crypto News - Centered with 80% Width */}
+      <Box
+        mt={6}
+        sx={{
+          maxWidth: '80%',
+          mx: 'auto',
+          px: 2
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <Typography variant="h4" fontWeight={700}>
+            Market News
+          </Typography>
+          <IconButton
+            onClick={() => newsRefetch && newsRefetch()}
+            disabled={!newsRefetch}
+            color="primary"
+            aria-label="Refresh news"
+            sx={{
+              '&:focus': {
+                outline: '2px solid',
+                outlineColor: 'primary.main',
+                outlineOffset: '2px',
+              },
+            }}
+          >
+            <RefreshIcon />
+          </IconButton>
+        </Box>
 
-        {currentTab === 0 && <Box>Holdings content coming soon</Box>}
-        {currentTab === 1 && <Box>Allocation content coming soon</Box>}
-        {currentTab === 2 && <Box>Performance content coming soon</Box>}
-        {currentTab === 3 && <Box>Gains/Losses content coming soon</Box>}
-        {currentTab === 4 && <Box>Transactions content coming soon</Box>}
-        {currentTab === 5 && <Box>Volatility content coming soon</Box>}
+        <CryptoNewsList onRefetchReady={setNewsRefetch} />
       </Box>
     </Container>
   );
 };
 
-export default Dashboard;
+export default News;

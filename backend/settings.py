@@ -12,9 +12,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -151,6 +155,9 @@ CHANNEL_LAYERS = {
 # CoinGecko API Configuration
 COINGECKO_API_URL = 'https://api.coingecko.com/api/v3'
 COINGECKO_API_KEY = os.environ.get('COINGECKO_API_KEY', '')
+
+# Finnhub API Configuration
+FINNHUB_API_KEY = os.environ.get('FINNHUB_API_KEY', '')
 
 
 # Logging Configuration

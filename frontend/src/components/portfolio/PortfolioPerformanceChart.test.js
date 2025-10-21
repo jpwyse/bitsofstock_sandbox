@@ -13,11 +13,11 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PortfolioPerformanceChart from './PortfolioPerformanceChart';
-import { PortfolioProvider } from '../context/PortfolioContext';
-import api from '../services/api';
+import { PortfolioProvider } from '../../context/PortfolioContext';
+import api from '../../services/api';
 
 // Mock the API service
-jest.mock('../services/api');
+jest.mock('../../services/api');
 
 // Mock the PortfolioContext
 const mockPortfolio = {

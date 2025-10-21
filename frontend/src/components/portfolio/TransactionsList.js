@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Table,
   TableBody,
@@ -17,8 +16,8 @@ import {
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import { usePortfolio } from '../context/PortfolioContext';
-import { formatCurrency, formatCryptoQuantity, formatDate } from '../utils/formatters';
+import { usePortfolio } from '../../context/PortfolioContext';
+import { formatCurrency, formatCryptoQuantity, formatDate } from '../../utils/formatters';
 
 const TransactionsList = () => {
   const { transactions } = usePortfolio();

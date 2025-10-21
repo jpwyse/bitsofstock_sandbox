@@ -8,9 +8,35 @@ from django.utils import timezone
 
 class User(models.Model):
     """Demo user for sandbox"""
+
+    class AccountType(models.TextChoices):
+        INDIVIDUAL = 'INDIVIDUAL', 'Individual'
+        JOINT = 'JOINT', 'Joint'
+        CORPORATE = 'CORPORATE', 'Corporate'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=150, null=True, blank=True)
+    last_name = models.CharField(max_length=150, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    state = models.CharField(max_length=100, null=True, blank=True)
+    zip_code = models.CharField(max_length=20, null=True, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    country = models.CharField(max_length=100, null=True, blank=True)
+    account_number = models.CharField(
+        max_length=11,
+        null=True,
+        blank=True,
+        help_text="11-digit account number"
+    )
+    account_type = models.CharField(
+        max_length=20,
+        choices=AccountType.choices,
+        default=AccountType.INDIVIDUAL,
+        help_text="Type of account"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -81,6 +107,12 @@ class Cryptocurrency(models.Model):
     symbol = models.CharField(max_length=10, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     coingecko_id = models.CharField(max_length=50, unique=True)
+    yfinance_symbol = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        help_text="Yahoo Finance ticker symbol (e.g., BTC-USD)"
+    )
     icon_url = models.URLField(max_length=500)
     category = models.CharField(
         max_length=20,

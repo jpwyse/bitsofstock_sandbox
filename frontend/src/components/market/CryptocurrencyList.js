@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -11,28 +11,30 @@ import {
   Box,
   Avatar,
   Button,
-  Chip,
   CircularProgress,
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import { formatCurrency, formatPercentage, formatLargeNumber } from '../utils/formatters';
-import TradeModal from './TradeModal';
-import apiService from '../services/api';
+import { formatCurrency, formatPercentage, formatLargeNumber } from '../../utils/formatters';
+import TradeModal from '../TradeModal';
+import ViewChartModal from './ViewChartModal';
+import apiService from '../../services/api';
 
-const CryptocurrencyList = ({ category = null }) => {
-  const [cryptocurrencies, setCryptocurrencies] = useState([]);
+const CryptocurrencyList = ({ category = null, sortBy = null }) => {
+  const [allCryptocurrencies, setAllCryptocurrencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [selectedCrypto, setSelectedCrypto] = useState(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewSelectedCrypto, setViewSelectedCrypto] = useState(null);
 
-  // Fetch cryptocurrencies based on category filter
+  // Fetch all cryptocurrencies once on mount
   useEffect(() => {
     const fetchCryptocurrencies = async () => {
       setLoading(true);
       try {
-        const data = await apiService.getCryptocurrencies(category);
-        setCryptocurrencies(data);
+        const data = await apiService.getCryptocurrencies();
+        setAllCryptocurrencies(data);
       } catch (err) {
         console.error('Error fetching cryptocurrencies:', err);
       } finally {
@@ -41,7 +43,31 @@ const CryptocurrencyList = ({ category = null }) => {
     };
 
     fetchCryptocurrencies();
-  }, [category]);
+  }, []); // Empty dependency array - fetch only once
+
+  // Filter cryptocurrencies based on category prop
+  const filteredCryptos = category
+    ? allCryptocurrencies.filter(crypto => crypto.category === category)
+    : allCryptocurrencies;
+
+  // Sort based on sortBy prop
+  let cryptocurrencies = [...filteredCryptos]; // Create copy to avoid mutating
+
+  if (sortBy === 'volume') {
+    // Sort by volume_24h (descending - highest first)
+    cryptocurrencies.sort((a, b) => {
+      const volumeA = parseFloat(a.volume_24h || 0);
+      const volumeB = parseFloat(b.volume_24h || 0);
+      return volumeB - volumeA;
+    });
+  } else if (sortBy === 'movers') {
+    // Sort by absolute value of price_change_24h (descending - biggest movers first)
+    cryptocurrencies.sort((a, b) => {
+      const changeA = Math.abs(parseFloat(a.price_change_24h || 0));
+      const changeB = Math.abs(parseFloat(b.price_change_24h || 0));
+      return changeB - changeA;
+    });
+  }
 
   const handleOpenTrade = (crypto) => {
     setSelectedCrypto(crypto);
@@ -137,13 +163,25 @@ const CryptocurrencyList = ({ category = null }) => {
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleOpenTrade(crypto)}
-                  >
-                    Trade
-                  </Button>
+                  <Box display="flex" gap={1} justifyContent="flex-end">
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() => {
+                        setViewSelectedCrypto(crypto);
+                        setViewModalOpen(true);
+                      }}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleOpenTrade(crypto)}
+                    >
+                      Trade
+                    </Button>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -156,6 +194,15 @@ const CryptocurrencyList = ({ category = null }) => {
         onClose={handleCloseTrade}
         cryptocurrency={selectedCrypto}
         tradeType="buy"
+      />
+
+      <ViewChartModal
+        open={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setViewSelectedCrypto(null);
+        }}
+        crypto={viewSelectedCrypto}
       />
     </>
   );

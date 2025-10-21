@@ -30,12 +30,8 @@ class ApiService {
   }
 
   // Cryptocurrency endpoints
-  async getCryptocurrencies(category = null) {
-    // Only add category parameter if it's a non-null, non-empty string
-    const url = category && category !== 'null' && category.trim() !== ''
-      ? `${API_BASE_URL}/cryptocurrencies?category=${category}`
-      : `${API_BASE_URL}/cryptocurrencies`;
-    const response = await fetch(url);
+  async getCryptocurrencies() {
+    const response = await fetch(`${API_BASE_URL}/cryptocurrencies`);
     if (!response.ok) {
       throw new Error('Failed to fetch cryptocurrencies');
     }
@@ -94,6 +90,33 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/transactions?page=${page}&type=${type}`);
     if (!response.ok) {
       throw new Error('Failed to fetch transactions');
+    }
+    return response.json();
+  }
+
+  // News endpoints
+  async getCryptoNews(limit = 20) {
+    const response = await fetch(`${API_BASE_URL}/news/crypto?limit=${limit}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch crypto news');
+    }
+    return response.json();
+  }
+
+  // Market endpoints
+  async getCryptoPriceHistory(symbol, timeframe = '1Y') {
+    const response = await fetch(`${API_BASE_URL}/market/crypto/history?symbol=${symbol}&timeframe=${timeframe}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch crypto price history');
+    }
+    return response.json();
+  }
+
+  // User endpoints
+  async getUserAccount() {
+    const response = await fetch(`${API_BASE_URL}/user/account`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch user account');
     }
     return response.json();
   }

@@ -20,9 +20,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { usePortfolio } from '../context/PortfolioContext';
-import api from '../services/api';
-import { formatCurrency, formatShortDate } from '../utils/formatters';
+import { usePortfolio } from '../../context/PortfolioContext';
+import api from '../../services/api';
+import { formatCurrency, formatShortDate } from '../../utils/formatters';
 
 /**
  * Portfolio Performance Chart Component

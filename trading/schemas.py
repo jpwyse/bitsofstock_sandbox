@@ -1,5 +1,5 @@
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List
 from ninja import Schema
 
@@ -126,6 +126,41 @@ class TradeResponseSchema(Schema):
 class PricePointSchema(Schema):
     timestamp: datetime
     price: Decimal
+
+
+# Market Price History Schema (for yfinance data)
+class MarketPricePointSchema(Schema):
+    date: str  # YYYY-MM-DD format
+    price: Decimal
+
+
+# News Schemas
+class NewsArticleSchema(Schema):
+    id: int
+    datetime: int  # UNIX timestamp
+    headline: str
+    image: Optional[str] = ''
+    summary: str
+    url: str
+    source: Optional[str] = ''
+
+
+# User Account Schema
+class UserAccountSchema(Schema):
+    # Personal Information
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    username: str
+    email: str
+    date_of_birth: Optional[date] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    country: Optional[str] = None
+    # Account Information
+    account_number: Optional[str] = None
+    account_type: Optional[str] = None
 
 
 # WebSocket Schemas

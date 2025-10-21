@@ -15,7 +15,6 @@ curl_cffi==0.13.0
 daphne==4.2.1
 dj-database-url==3.0.1
 Django==5.2.7
-django-channels==0.7.0
 django-cors-headers==4.9.0
 django-extensions==4.1
 django-ninja==1.4.3
@@ -38,8 +37,9 @@ psycopg2-binary==2.9.11
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.23
-pydantic==2.12.1
-pydantic_core==2.41.3
+# Pydantic v2 (required by django-ninja 1.4.3)
+pydantic>=2.6,<3.0
+pydantic-core>=2.0,<3.0
 pyOpenSSL==25.3.0
 python-dateutil==2.9.0.post0
 python-decouple==3.8
@@ -61,4 +61,13 @@ tzdata==2025.2
 urllib3==2.5.0
 websockets==15.0.1
 whitenoise==6.11.0
+yfinance==0.2.50
 zope.interface==8.0.1
+
+# Testing dependencies
+pytest==8.0.2
+pytest-django==4.8.0
+pytest-cov==4.1.0
+factory-boy==3.3.1
+freezegun==1.5.1
+responses==0.25.0

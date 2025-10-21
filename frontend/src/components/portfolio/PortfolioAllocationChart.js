@@ -1,8 +1,7 @@
-import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Box, Typography, Paper, Grid, Card, CardContent } from '@mui/material';
-import { usePortfolio } from '../context/PortfolioContext';
-import { formatCurrency, formatPercentage } from '../utils/formatters';
+import { usePortfolio } from '../../context/PortfolioContext';
+import { formatCurrency, formatPercentage } from '../../utils/formatters';
 
 // Updated colors to match project theme (purple/violet shades)
 const COLORS = [
@@ -160,7 +159,7 @@ const PortfolioAllocationChart = () => {
       {/* Chart Container */}
       <Paper sx={{ p: 4, borderRadius: 2 }}>
         {/* Asset Allocation Breakdown */}
-        <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+        <Box sx={{ mb: 0, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
           {chartData.map((data, index) => (
             <Box
               key={`asset-${index}`}
@@ -192,7 +191,7 @@ const PortfolioAllocationChart = () => {
         </Box>
 
         {/* Pie Chart - Larger size */}
-        <ResponsiveContainer width="100%" height={600}>
+        <ResponsiveContainer width="100%" height={700}>
           <PieChart>
             <Pie
               data={chartData}
@@ -200,7 +199,7 @@ const PortfolioAllocationChart = () => {
               cy="50%"
               labelLine={false}
               label={renderCustomizedLabel}
-              outerRadius={200}
+              outerRadius="75%"
               fill="#8884d8"
               dataKey="value"
             >

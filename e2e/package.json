@@ -1,0 +1,20 @@
+{
+  "name": "crypto-trading-sandbox-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for Crypto Trading Sandbox using Playwright",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "install-browsers": "playwright install chromium"
+  },
+  "keywords": ["e2e", "playwright", "testing"],
+  "author": "James Wyse",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}

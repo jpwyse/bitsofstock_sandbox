@@ -13,13 +13,22 @@ import {
   Avatar,
   Alert,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import { usePortfolio } from '../context/PortfolioContext';
 import { formatCurrency } from '../utils/formatters';
+import apiService from '../services/api';
 
-const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType = 'buy' }) => {
+const TradeModalAllCryptos = ({ open, onClose }) => {
   const { executeBuy, executeSell, portfolio } = usePortfolio();
-  const [tradeType, setTradeType] = useState(initialTradeType);
+
+  // Cryptocurrency list and selection
+  const [cryptocurrencies, setCryptocurrencies] = useState([]);
+  const [selectedCrypto, setSelectedCrypto] = useState(null);
+  const [loadingCryptos, setLoadingCryptos] = useState(false);
+
+  // Trade state
+  const [tradeType, setTradeType] = useState('buy');
   const [inputMode, setInputMode] = useState('usd'); // 'usd' or 'quantity'
   const [usdAmount, setUsdAmount] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -27,32 +36,64 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  // Fetch cryptocurrencies when modal opens
   useEffect(() => {
-    setTradeType(initialTradeType);
-  }, [initialTradeType]);
+    const fetchCryptocurrencies = async () => {
+      if (!open) return;
 
+      setLoadingCryptos(true);
+      try {
+        const data = await apiService.getCryptocurrencies();
+        setCryptocurrencies(data);
+      } catch (err) {
+        console.error('Error fetching cryptocurrencies:', err);
+        setError('Failed to load cryptocurrencies');
+      } finally {
+        setLoadingCryptos(false);
+      }
+    };
+
+    fetchCryptocurrencies();
+  }, [open]);
+
+  // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      // Reset form when modal opens
+      setSelectedCrypto(null);
       setUsdAmount('');
       setQuantity('');
       setError(null);
       setSuccess(false);
+      setTradeType('buy');
+      setInputMode('usd');
     }
   }, [open]);
 
+  // Auto-calculate the other field when one changes
   useEffect(() => {
-    // Auto-calculate the other field when one changes
-    if (!cryptocurrency?.current_price) return;
+    if (!selectedCrypto?.current_price) return;
 
     if (inputMode === 'usd' && usdAmount) {
-      const calc = parseFloat(usdAmount) / parseFloat(cryptocurrency.current_price);
+      const calc = parseFloat(usdAmount) / parseFloat(selectedCrypto.current_price);
       setQuantity(calc.toString());
     } else if (inputMode === 'quantity' && quantity) {
-      const calc = parseFloat(quantity) * parseFloat(cryptocurrency.current_price);
+      const calc = parseFloat(quantity) * parseFloat(selectedCrypto.current_price);
       setUsdAmount(calc.toString());
     }
-  }, [usdAmount, quantity, inputMode, cryptocurrency]);
+  }, [usdAmount, quantity, inputMode, selectedCrypto]);
+
+  // Recalculate when selected crypto changes
+  useEffect(() => {
+    if (!selectedCrypto?.current_price) return;
+
+    if (inputMode === 'usd' && usdAmount) {
+      const calc = parseFloat(usdAmount) / parseFloat(selectedCrypto.current_price);
+      setQuantity(calc.toString());
+    } else if (inputMode === 'quantity' && quantity) {
+      const calc = parseFloat(quantity) * parseFloat(selectedCrypto.current_price);
+      setUsdAmount(calc.toString());
+    }
+  }, [selectedCrypto]);
 
   const handleTradeTypeChange = (event, newType) => {
     if (newType !== null) {
@@ -86,6 +127,11 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
   };
 
   const handleSubmit = async () => {
+    if (!selectedCrypto) {
+      setError('Please select a cryptocurrency');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -101,9 +147,9 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
 
       let result;
       if (tradeType === 'buy') {
-        result = await executeBuy(cryptocurrency.id, usdValue, quantityValue);
+        result = await executeBuy(selectedCrypto.id, usdValue, quantityValue);
       } else {
-        result = await executeSell(cryptocurrency.id, usdValue, quantityValue);
+        result = await executeSell(selectedCrypto.id, usdValue, quantityValue);
       }
 
       if (result.success) {
@@ -121,22 +167,37 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
     }
   };
 
-  if (!cryptocurrency) return null;
+  const currentPrice = selectedCrypto ? parseFloat(selectedCrypto.current_price || 0) : 0;
+  const totalValue = quantity && selectedCrypto ? parseFloat(quantity) * currentPrice : 0;
 
-  const currentPrice = parseFloat(cryptocurrency.current_price || 0);
-  const totalValue = quantity ? parseFloat(quantity) * currentPrice : 0;
+  // Check if submit should be disabled
+  const isSubmitDisabled =
+    loading ||
+    !selectedCrypto ||
+    (!usdAmount && !quantity) ||
+    isNaN(parseFloat(usdAmount || quantity)) ||
+    parseFloat(usdAmount || quantity) <= 0;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={2}>
-          <Avatar src={cryptocurrency.icon_url} alt={cryptocurrency.symbol} />
-          <Box>
-            <Typography variant="h6">{cryptocurrency.name}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {cryptocurrency.symbol} • {formatCurrency(currentPrice)}
-            </Typography>
-          </Box>
+          {selectedCrypto ? (
+            <>
+              <Avatar src={selectedCrypto.icon_url} alt={selectedCrypto.symbol} />
+              <Box>
+                <Typography variant="h6">{selectedCrypto.name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedCrypto.symbol} • {formatCurrency(currentPrice)}
+                </Typography>
+              </Box>
+            </>
+          ) : (
+            <>
+              <Avatar sx={{ bgcolor: 'grey.400' }}>T</Avatar>
+              <Typography variant="h6">Trade</Typography>
+            </>
+          )}
         </Box>
       </DialogTitle>
 
@@ -157,6 +218,46 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
             </ToggleButton>
           </ToggleButtonGroup>
 
+          {/* Cryptocurrency Autocomplete */}
+          <Autocomplete
+            options={cryptocurrencies}
+            value={selectedCrypto}
+            onChange={(event, newValue) => {
+              setSelectedCrypto(newValue);
+              setError(null);
+            }}
+            getOptionLabel={(option) => `${option.symbol} - ${option.name}`}
+            renderOption={(props, option) => (
+              <Box component="li" {...props} display="flex" alignItems="center" gap={1}>
+                <Avatar src={option.icon_url} alt={option.symbol} sx={{ width: 24, height: 24 }} />
+                <Typography variant="body2" fontWeight={600}>
+                  {option.symbol}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {option.name}
+                </Typography>
+              </Box>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Search Cryptocurrency"
+                placeholder="Type to search..."
+                helperText={!selectedCrypto ? "Select a cryptocurrency to trade" : ""}
+              />
+            )}
+            loading={loadingCryptos}
+            disabled={loadingCryptos}
+            filterOptions={(options, { inputValue }) => {
+              const searchTerm = inputValue.toLowerCase();
+              return options.filter(
+                (option) =>
+                  option.symbol.toLowerCase().includes(searchTerm) ||
+                  option.name.toLowerCase().includes(searchTerm)
+              );
+            }}
+          />
+
           {/* Input Mode Toggle */}
           <ToggleButtonGroup
             value={inputMode}
@@ -164,6 +265,7 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
             onChange={handleInputModeChange}
             fullWidth
             size="small"
+            disabled={!selectedCrypto}
           >
             <ToggleButton value="usd">USD Amount</ToggleButton>
             <ToggleButton value="quantity">Quantity</ToggleButton>
@@ -176,6 +278,7 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
             value={usdAmount}
             onChange={handleUsdChange}
             fullWidth
+            disabled={!selectedCrypto}
             InputProps={{
               startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
             }}
@@ -189,13 +292,18 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
             value={quantity}
             onChange={handleQuantityChange}
             fullWidth
+            disabled={!selectedCrypto}
             InputProps={{
-              endAdornment: <Typography sx={{ ml: 1 }}>{cryptocurrency.symbol}</Typography>,
+              endAdornment: (
+                <Typography sx={{ ml: 1 }}>
+                  {selectedCrypto?.symbol || ''}
+                </Typography>
+              ),
             }}
           />
 
           {/* Total Value Display */}
-          {quantity && (
+          {quantity && selectedCrypto && (
             <Box p={2} bgcolor="background.default" borderRadius={2}>
               <Typography variant="body2" color="text.secondary">
                 Total Value
@@ -230,12 +338,14 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
           onClick={handleSubmit}
           variant="contained"
           color={tradeType === 'buy' ? 'primary' : 'error'}
-          disabled={loading || !usdAmount || !quantity}
+          disabled={isSubmitDisabled}
         >
           {loading ? (
             <CircularProgress size={24} />
+          ) : selectedCrypto ? (
+            `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${selectedCrypto.symbol}`
           ) : (
-            `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${cryptocurrency.symbol}`
+            'Select Cryptocurrency'
           )}
         </Button>
       </DialogActions>
@@ -243,4 +353,4 @@ const TradeModal = ({ open, onClose, cryptocurrency, tradeType: initialTradeType
   );
 };
 
-export default TradeModal;
+export default TradeModalAllCryptos;

@@ -17,12 +17,22 @@ class Command(BaseCommand):
         
         # Create demo user
         user, created = User.objects.get_or_create(
-            username='demo_user',
+            username='john_smith',
             defaults={
-                'email': 'demo@bitsofstock.com'
+                'email': 'john_smith@gmail.com',
+                'first_name': 'John',
+                'last_name': 'Smith',
+                'date_of_birth': '1998-12-01',  # December 1, 1998
+                'address': '1 Main St.',
+                'city': 'San Francisco',
+                'state': 'California',
+                'zip_code': '94118',
+                'country': 'United States',
+                'account_number': '00048224398',
+                'account_type': User.AccountType.INDIVIDUAL,
             }
         )
-        
+
         if created:
             self.stdout.write(self.style.SUCCESS(f'Created user: {user.username}'))
         
