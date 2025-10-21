@@ -111,15 +111,42 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
+# Internationalization & Timezone Configuration
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
+# Timezone Configuration
+# TIME_ZONE: Server timezone for date/time display and naive datetime interpretation
+# - Set to 'UTC' (Coordinated Universal Time) for consistent server-side timestamps
+# - All database timestamps stored in UTC for portability and consistency
+# - External APIs (CoinGecko, Finnhub, yfinance) use various timezone formats
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
+# Timezone-Aware Datetime Handling
+# USE_TZ: Enables timezone-aware datetime objects throughout Django
+# - When True (REQUIRED for this project):
+#   • All datetime objects are timezone-aware (have tzinfo)
+#   • Database stores datetimes in UTC
+#   • Django automatically converts between timezones
+#   • timezone.now() returns aware datetime in UTC
+#   • Model DateTimeField with auto_now_add/auto_now creates aware datetimes
+# - Impact on project:
+#   • Transaction timestamps: timezone-aware (trading/models.py:Transaction.timestamp)
+#   • Portfolio creation: timezone-aware (trading/models.py:Portfolio.created_at)
+#   • Price updates: timezone-aware (trading/models.py:Cryptocurrency.last_updated)
+#   • API responses: Serialized as ISO 8601 with timezone offset (e.g., "2025-01-15T14:30:00Z")
+#   • Historical data: CoinGecko returns UTC timestamps, converted to aware via django.utils.timezone
+# - External API timezone handling:
+#   • CoinGecko: Returns UNIX timestamps (ms), converted to UTC aware datetimes
+#   • Finnhub: Returns UNIX timestamps (seconds), serialized as integers in API responses
+#   • yfinance: Returns timezone-aware timestamps, converted to tz-naive strings for frontend
+# - Frontend consumption:
+#   • ISO 8601 strings with timezone (e.g., "2025-01-15T14:30:00+00:00" or "Z" suffix)
+#   • JavaScript Date() constructor automatically parses timezone offsets
+# - IMPORTANT: Never use datetime.datetime.now() - always use django.utils.timezone.now()
 USE_TZ = True
 
 
