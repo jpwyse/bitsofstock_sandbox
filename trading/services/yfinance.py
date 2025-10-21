@@ -7,7 +7,7 @@ from typing import List, Dict
 class YFinanceService:
     """Service for fetching cryptocurrency price data from yfinance"""
 
-    # Symbol mapping: App symbols � yfinance tickers
+    # Symbol mapping: App symbols -> yfinance tickers
     # Maps all cryptocurrencies currently in the database
     SYMBOL_MAP = {
         'BTC': 'BTC-USD',
