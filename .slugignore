@@ -7,12 +7,6 @@ docs/
 e2e/
 pytest.ini
 .pytest_cache/
-frontend/src/**/*.test.js
-frontend/src/**/*.test.jsx
-
-# Frontend development
-frontend/node_modules/
-frontend/src/
 
 # Python virtual environment
 venv/
