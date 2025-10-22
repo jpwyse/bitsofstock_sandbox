@@ -12,7 +12,6 @@ frontend/src/**/*.test.jsx
 
 # Frontend development
 frontend/node_modules/
-frontend/public/
 frontend/src/
 
 # Python virtual environment
