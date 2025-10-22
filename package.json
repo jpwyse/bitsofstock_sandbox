@@ -1,0 +1,13 @@
+{
+  "name": "bitsofstock",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "heroku-prebuild": "cd frontend && npm install",
+    "build": "cd frontend && npm run build"
+  },
+  "engines": {
+    "node": "22.16.0",
+    "npm": "10.9.2"
+  }
+}

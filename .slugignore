@@ -1,0 +1,27 @@
+# Development files
+*.md
+docs/
+.github/
+
+# Testing
+e2e/
+pytest.ini
+.pytest_cache/
+frontend/src/**/*.test.js
+frontend/src/**/*.test.jsx
+
+# Frontend development
+frontend/node_modules/
+frontend/public/
+frontend/src/
+
+# Python virtual environment
+venv/
+.venv/
+
+# Local SQLite database
+db.sqlite3
+
+# Environment files
+.env.local
+.env.development
