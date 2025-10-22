@@ -161,6 +161,14 @@ CORS_ALLOW_CREDENTIALS = True
 # -----------------------------
 # Channels (WebSockets)
 # -----------------------------
+import ssl
+
+def _redis_host(url: str):
+    """Configure Redis connection with SSL if needed."""
+    if url.startswith("rediss://"):
+        return {"address": url, "ssl_cert_reqs": ssl.CERT_NONE}
+    return url
+
 # Allowed origins for WebSocket connections (e.g., your Heroku app + local dev)
 CHANNELS_WS_ALLOWED_ORIGINS = env_csv(
     "CHANNELS_WS_ALLOWED_ORIGINS",
@@ -182,8 +190,7 @@ else:
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                # channels_redis accepts a redis:// URL directly
-                "hosts": [REDIS_URL or "redis://127.0.0.1:6379/0"],
+                "hosts": [_redis_host(REDIS_URL or "redis://127.0.0.1:6379/0")],
             },
         },
     }
